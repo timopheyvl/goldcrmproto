@@ -12,14 +12,18 @@ export function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const matchesModule = (module: (typeof MODULES)[number]) =>
+    location.pathname === module.path || location.pathname.startsWith(`${module.path}/`);
+
   useEffect(() => {
-    const currentModule = MODULES.find((module) => module.path === location.pathname);
+    const currentModule = MODULES.find(matchesModule);
     if (currentModule && !currentModule.roles.includes(role)) {
       navigate(DEFAULT_MODULE_PATH, { replace: true });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [role, location.pathname, navigate]);
 
-  const activeModule = MODULES.find((module) => module.path === location.pathname);
+  const activeModule = MODULES.find(matchesModule);
 
   return (
     <div className="app-shell">
