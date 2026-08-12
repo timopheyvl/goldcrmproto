@@ -21,7 +21,23 @@ function matchesQuery(product: Product, query: string): boolean {
   );
 }
 
-export function CatalogPage() {
+interface CatalogPageProps {
+  /**
+   * 'edit' — встроенный режим для /orders/:id/edit (модуль «Заявки»): корзина
+   * правит состав редактируемой заявки, а не создаёт новую. Скрывает
+   * admin-ссылки каталога и включает добавление/удаление позиций независимо
+   * от роли (менеджер тоже правит состав до статуса «Исполнена»).
+   */
+  mode?: 'shop' | 'edit';
+  /** В режиме 'edit' пробрасывается в CartDrawer — «Сохранить»/«Отмена» прямо в футере корзины. */
+  editActions?: {
+    onSave: () => void;
+    onCancel: () => void;
+    saveDisabled?: boolean;
+  };
+}
+
+export function CatalogPage({ mode = 'shop', editActions }: CatalogPageProps = {}) {
   const { role } = useRole();
   const navigate = useNavigate();
   const { getQuantity, addItem, setQuantity, totalQuantity } = useCart();
@@ -31,7 +47,7 @@ export function CatalogPage() {
   const [query, setQuery] = useState('');
   const [layout, setLayout] = useState<'grid' | 'list'>('grid');
   const [loading, setLoading] = useState(true);
-  const [cartOpen, setCartOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(mode === 'edit');
 
   const counts = useMemo(() => countProductsByCategory(), []);
 
@@ -58,8 +74,9 @@ export function CatalogPage() {
     });
   }, [scopedCategoryIds, query]);
 
-  const canOrder = role === 'representative';
+  const canOrder = mode === 'edit' ? true : role === 'representative';
   const showVendor = role === 'manager';
+  const showManagerTools = mode === 'shop' && role === 'manager';
 
   const selectedCategory = selectedCategoryId ? CATEGORIES.find((c) => c.id === selectedCategoryId) : null;
 
@@ -112,7 +129,7 @@ export function CatalogPage() {
                 ☰
               </button>
             </div>
-            {role === 'manager' && (
+            {showManagerTools && (
               <>
                 <Link to="/catalog/vendors" className="btn btn--secondary">
                   Вендоры
@@ -164,7 +181,14 @@ export function CatalogPage() {
         )}
       </div>
 
-      {canOrder && <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />}
+      {canOrder && (
+        <CartDrawer
+          open={cartOpen}
+          onClose={() => setCartOpen(false)}
+          showCheckout={mode !== 'edit'}
+          editActions={mode === 'edit' ? editActions : undefined}
+        />
+      )}
     </div>
   );
 }

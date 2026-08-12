@@ -8,9 +8,21 @@ import { useRequests } from '../requests/useRequests';
 interface CartDrawerProps {
   open: boolean;
   onClose: () => void;
+  /** Скрывает кнопку «Сформировать заявку» — используется в режиме редактирования состава существующей заявки (/orders/:id/edit), где сохранение выполняется через шапку страницы, а не через корзину. */
+  showCheckout?: boolean;
+  /**
+   * Режим редактирования (/orders/:id/edit): дублируют «Сохранить»/«Отмена»
+   * из баннера страницы прямо в футере корзины, чтобы не приходилось
+   * закрывать корзину, чтобы их найти.
+   */
+  editActions?: {
+    onSave: () => void;
+    onCancel: () => void;
+    saveDisabled?: boolean;
+  };
 }
 
-export function CartDrawer({ open, onClose }: CartDrawerProps) {
+export function CartDrawer({ open, onClose, showCheckout = true, editActions }: CartDrawerProps) {
   const { items, totalQuantity, setQuantity, removeItem, clear } = useCart();
   const { createRequest } = useRequests();
   const [submittedNumber, setSubmittedNumber] = useState<string | null>(null);
@@ -40,6 +52,7 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
         productId: product.id,
         name: product.name,
         sku: product.sku,
+        vendorId: product.vendorId,
         quantity: item.quantity,
       })),
     );
@@ -68,7 +81,11 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
       ) : rows.length === 0 ? (
         <div className="empty-state">
           <div className="empty-state__title">Корзина пуста</div>
-          <p>Добавьте товары из каталога, чтобы сформировать заявку.</p>
+          <p>
+            {showCheckout
+              ? 'Добавьте товары из каталога, чтобы сформировать заявку.'
+              : 'Добавьте товары из каталога, чтобы они попали в состав заявки.'}
+          </p>
         </div>
       ) : (
         <div className="cart-list">
@@ -99,14 +116,33 @@ export function CartDrawer({ open, onClose }: CartDrawerProps) {
         </div>
       )}
 
-      {rows.length > 0 && !submittedNumber && (
+      {!submittedNumber && (rows.length > 0 || editActions) && (
         <div className="cart-footer">
-          <div className="cart-footer__summary">
-            Позиций: {rows.length} · Всего единиц: {totalQuantity}
-          </div>
-          <button type="button" className="btn btn--primary" onClick={handleSubmit}>
-            Сформировать заявку
-          </button>
+          {rows.length > 0 && (
+            <div className="cart-footer__summary">
+              Позиций: {rows.length} · Всего единиц: {totalQuantity}
+            </div>
+          )}
+          {showCheckout && rows.length > 0 && (
+            <button type="button" className="btn btn--primary" onClick={handleSubmit}>
+              Сформировать заявку
+            </button>
+          )}
+          {editActions && (
+            <div className="cart-footer__edit-actions">
+              <button type="button" className="btn btn--ghost" onClick={editActions.onCancel}>
+                Отмена
+              </button>
+              <button
+                type="button"
+                className="btn btn--primary"
+                disabled={editActions.saveDisabled}
+                onClick={editActions.onSave}
+              >
+                Сохранить
+              </button>
+            </div>
+          )}
         </div>
       )}
     </Drawer>

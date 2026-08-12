@@ -458,6 +458,13 @@
   color: var(--text-muted);
 }
 
+.cart-footer__edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
 .cart-success {
   display: flex;
   flex-direction: column;
