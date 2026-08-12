@@ -7,7 +7,8 @@ import { useVendors } from '../catalog/useVendors';
 import { StatusBadge } from './StatusBadge';
 import { VersionHistoryModal } from './VersionHistoryModal';
 import { getScopedRequests } from './scope';
-import { CURRENT_REPRESENTATIVE_ID, getCustomerById, getDepartmentById, getSiteById } from '../../data/org';
+import { useEntities } from '../../data/useEntities';
+import { getCurrentActorName } from './actor';
 import { REQUEST_STATUSES, REQUEST_STATUS_LABELS } from './types';
 import type { RequestDocument, RequestStatus } from './types';
 import './requests.css';
@@ -28,6 +29,8 @@ export function RequestDetailPage() {
   const navigate = useNavigate();
   const { requests, updateStatus, addDocument, getDocumentFile, restoreVersion } = useRequests();
   const { getVendorName } = useVendors();
+  const { getCustomerById, getSiteById, getDepartmentById, currentRepresentativeId, currentRepresentative } =
+    useEntities();
 
   const scopedRequests = useMemo(() => getScopedRequests(role, requests), [role, requests]);
   const request = scopedRequests.find((item) => item.id === id);
@@ -60,7 +63,7 @@ export function RequestDetailPage() {
   const isManager = role === 'manager';
   const editable =
     request.status !== 'done' &&
-    (isManager || (role === 'representative' && request.representativeId === CURRENT_REPRESENTATIVE_ID));
+    (isManager || (role === 'representative' && request.representativeId === currentRepresentativeId));
 
   const customerName = getCustomerById(request.customerId)?.name ?? '—';
   const siteName = getSiteById(request.siteId)?.name ?? '—';
@@ -87,7 +90,8 @@ export function RequestDetailPage() {
   };
 
   const handleRestoreVersion = (versionNumber: number) => {
-    restoreVersion(request.id, versionNumber);
+    const authorName = getCurrentActorName(role, currentRepresentative?.fullName);
+    restoreVersion(request.id, versionNumber, authorName);
     setHistoryOpen(false);
   };
 

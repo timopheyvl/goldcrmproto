@@ -6,7 +6,8 @@ import { useCart } from '../catalog/useCart';
 import { CatalogPage } from '../catalog/CatalogPage';
 import { PRODUCTS } from '../catalog/data';
 import { getScopedRequests } from './scope';
-import { CURRENT_REPRESENTATIVE_ID } from '../../data/org';
+import { useEntities } from '../../data/useEntities';
+import { getCurrentActorName } from './actor';
 import type { RequestItem } from './types';
 import type { CartItem } from '../catalog/types';
 import './requests.css';
@@ -25,6 +26,7 @@ export function OrderEditPage() {
   const navigate = useNavigate();
   const { requests, updateItems } = useRequests();
   const { items: cartItems, setQuantity, clear } = useCart();
+  const { currentRepresentativeId, currentRepresentative } = useEntities();
 
   const scopedRequests = useMemo(() => getScopedRequests(role, requests), [role, requests]);
   const request = scopedRequests.find((item) => item.id === id);
@@ -32,7 +34,7 @@ export function OrderEditPage() {
   const editable =
     !!request &&
     request.status !== 'done' &&
-    (role === 'manager' || (role === 'representative' && request.representativeId === CURRENT_REPRESENTATIVE_ID));
+    (role === 'manager' || (role === 'representative' && request.representativeId === currentRepresentativeId));
 
   const snapshotRef = useRef<CartItem[] | null>(null);
   const settledRef = useRef(false);
@@ -123,7 +125,8 @@ export function OrderEditPage() {
       })
       .filter((item): item is RequestItem => item !== null);
 
-    updateItems(request.id, nextItems);
+    const authorName = getCurrentActorName(role, currentRepresentative?.fullName);
+    updateItems(request.id, nextItems, authorName);
     restoreOriginalCart();
     navigate(`/requests/${request.id}`);
   };

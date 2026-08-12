@@ -8,7 +8,7 @@ import { useObjects } from './useObjects';
 import { useRequests } from '../requests/useRequests';
 import { useIsMobile } from './useIsMobile';
 import { StatusBadge as RequestStatusBadge } from '../requests/StatusBadge';
-import { getRepresentativesByCustomer, getSiteById } from '../../data/org';
+import { useEntities } from '../../data/useEntities';
 import { STAGE_STATUSES, STAGE_STATUS_BADGE, STAGE_STATUS_LABELS } from './types';
 import type { Stage, StageFileMeta, StageInput, StageStatus } from './types';
 import './objects.css';
@@ -44,6 +44,7 @@ export function StagePanel({ stage, onClose }: StagePanelProps) {
     getStageFile,
   } = useObjects();
   const { requests } = useRequests();
+  const { getSiteById, getRepresentativesByCustomer } = useEntities();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
 

@@ -4,6 +4,9 @@ import { ProductThumb } from './ProductThumb';
 import { useCart } from './useCart';
 import { CATEGORIES, PRODUCTS } from './data';
 import { useRequests } from '../requests/useRequests';
+import { useRole } from '../../context/useRole';
+import { useEntities } from '../../data/useEntities';
+import { getCurrentActorName } from '../requests/actor';
 
 interface CartDrawerProps {
   open: boolean;
@@ -25,6 +28,8 @@ interface CartDrawerProps {
 export function CartDrawer({ open, onClose, showCheckout = true, editActions }: CartDrawerProps) {
   const { items, totalQuantity, setQuantity, removeItem, clear } = useCart();
   const { createRequest } = useRequests();
+  const { role } = useRole();
+  const { getRepresentativeScope, currentRepresentativeId, currentRepresentative } = useEntities();
   const [submittedNumber, setSubmittedNumber] = useState<string | null>(null);
   const [downloaded, setDownloaded] = useState(false);
 
@@ -47,6 +52,11 @@ export function CartDrawer({ open, onClose, showCheckout = true, editActions }: 
   };
 
   const handleSubmit = () => {
+    // Атрибуция заявки — заказчик/объект/служба живого профиля текущего
+    // представителя (см. src/data/useEntities.ts), не хардкод.
+    const scope = getRepresentativeScope(currentRepresentativeId);
+    if (!scope) return;
+    const authorName = getCurrentActorName(role, currentRepresentative?.fullName);
     const request = createRequest(
       rows.map(({ item, product }) => ({
         productId: product.id,
@@ -55,6 +65,8 @@ export function CartDrawer({ open, onClose, showCheckout = true, editActions }: 
         vendorId: product.vendorId,
         quantity: item.quantity,
       })),
+      { ...scope, representativeId: currentRepresentativeId },
+      authorName,
     );
     clear();
     setSubmittedNumber(request.number);

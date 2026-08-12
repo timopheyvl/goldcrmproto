@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useRole } from '../../context/useRole';
 import { useObjects } from './useObjects';
 import { getScopedSites } from './scope';
-import { CUSTOMERS, getCustomerById } from '../../data/org';
+import { useEntities } from '../../data/useEntities';
 import { ProductThumb } from '../catalog/ProductThumb';
 import '../catalog/catalog.css';
 import './objects.css';
@@ -15,10 +15,14 @@ function formatDate(iso: string): string {
 export function ObjectsPage() {
   const { role } = useRole();
   const navigate = useNavigate();
-  const { sites } = useObjects();
+  const { sites, departments, representatives } = useObjects();
+  const { customers, getCustomerById } = useEntities();
   const isManager = role === 'manager';
 
-  const scopedSites = useMemo(() => getScopedSites(role, sites), [role, sites]);
+  const scopedSites = useMemo(
+    () => getScopedSites(role, sites, departments, representatives),
+    [role, sites, departments, representatives],
+  );
 
   const [customerId, setCustomerId] = useState('');
   const [loading, setLoading] = useState(true);
@@ -31,8 +35,8 @@ export function ObjectsPage() {
 
   const customerOptions = useMemo(() => {
     const ids = new Set(scopedSites.map((site) => site.customerId));
-    return CUSTOMERS.filter((customer) => ids.has(customer.id));
-  }, [scopedSites]);
+    return customers.filter((customer) => ids.has(customer.id));
+  }, [scopedSites, customers]);
 
   const filteredSites = useMemo(() => {
     return scopedSites

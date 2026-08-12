@@ -6,7 +6,7 @@ import { StatusBadge } from './StatusBadge';
 import { getScopedRequests } from './scope';
 import { REQUEST_STATUSES, REQUEST_STATUS_LABELS } from './types';
 import type { RequestStatus } from './types';
-import { CUSTOMERS, getCustomerById, getDepartmentById, getSiteById } from '../../data/org';
+import { useEntities } from '../../data/useEntities';
 import './requests.css';
 
 function formatDate(iso: string): string {
@@ -17,6 +17,7 @@ export function RequestsPage() {
   const { role } = useRole();
   const navigate = useNavigate();
   const { requests } = useRequests();
+  const { customers, getCustomerById, getSiteById, getDepartmentById } = useEntities();
   const isManager = role === 'manager';
 
   const scopedRequests = useMemo(() => getScopedRequests(role, requests), [role, requests]);
@@ -37,8 +38,8 @@ export function RequestsPage() {
 
   const customerOptions = useMemo(() => {
     const ids = new Set(scopedRequests.map((request) => request.customerId));
-    return CUSTOMERS.filter((customer) => ids.has(customer.id));
-  }, [scopedRequests]);
+    return customers.filter((customer) => ids.has(customer.id));
+  }, [scopedRequests, customers]);
 
   const siteOptions = useMemo(() => {
     const ids = new Set(scopedRequests.map((request) => request.siteId));
@@ -47,7 +48,7 @@ export function RequestsPage() {
       .filter((site): site is NonNullable<typeof site> => Boolean(site))
       .filter((site) => !customerId || site.customerId === customerId)
       .sort((a, b) => a.name.localeCompare(b.name, 'ru'));
-  }, [scopedRequests, customerId]);
+  }, [scopedRequests, customerId, getSiteById]);
 
   const departmentOptions = useMemo(() => {
     const ids = new Set(scopedRequests.map((request) => request.departmentId));
@@ -56,7 +57,7 @@ export function RequestsPage() {
       .filter((department): department is NonNullable<typeof department> => Boolean(department))
       .filter((department) => !siteId || department.siteId === siteId)
       .sort((a, b) => a.name.localeCompare(b.name, 'ru'));
-  }, [scopedRequests, siteId]);
+  }, [scopedRequests, siteId, getDepartmentById]);
 
   const handleCustomerChange = (value: string) => {
     setCustomerId(value);

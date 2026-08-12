@@ -228,70 +228,17 @@ export const EMPLOYEES: Employee[] = [
 
 /**
  * Прототип не реализует аутентификацию — роль переключается мок-селектором.
- * Для сценариев, завязанных на профиль конкретного представителя (скоуп
- * заявок, авто-атрибуция при создании), считаем «текущим» этого представителя.
+ * Для сценариев, завязанных на профиль конкретного представителя/сотрудника
+ * (скоуп заявок и объектов, авто-атрибуция при создании), считаем «текущим»
+ * этого представителя/сотрудника. Живые данные (после правок в «Управлении»)
+ * читаются через src/data/useEntities.ts, а не отсюда — эти массивы
+ * используются только как начальное состояние стора.
  */
 export const CURRENT_REPRESENTATIVE_ID = 'rep-1';
-
-export function getCustomerById(id: string): Customer | undefined {
-  return CUSTOMERS.find((customer) => customer.id === id);
-}
-
-export function getSiteById(id: string): Site | undefined {
-  return SITES.find((site) => site.id === id);
-}
-
-export function getDepartmentById(id: string): Department | undefined {
-  return DEPARTMENTS.find((department) => department.id === id);
-}
-
-export function getRepresentativeById(id: string): Representative | undefined {
-  return REPRESENTATIVES.find((representative) => representative.id === id);
-}
-
-export function getManagerById(id: string): Manager | undefined {
-  return MANAGERS.find((manager) => manager.id === id);
-}
-
-export function getEmployeeById(id: string): Employee | undefined {
-  return EMPLOYEES.find((employee) => employee.id === id);
-}
-
-export function getEmployeesByCustomer(customerId: string): Employee[] {
-  return EMPLOYEES.filter((employee) => employee.customerId === customerId);
-}
-
-export function getSitesByCustomer(customerId: string): Site[] {
-  return SITES.filter((site) => site.customerId === customerId);
-}
-
-export function getDepartmentsBySite(siteId: string): Department[] {
-  return DEPARTMENTS.filter((department) => department.siteId === siteId);
-}
-
-/** Представители всех объектов/служб данного заказчика — для полей вида
- * «ответственный из пользователей своего заказчика». */
-export function getRepresentativesByCustomer(customerId: string): Representative[] {
-  const departmentIds = new Set(
-    SITES.filter((site) => site.customerId === customerId).flatMap((site) =>
-      getDepartmentsBySite(site.id).map((department) => department.id),
-    ),
-  );
-  return REPRESENTATIVES.filter((representative) => departmentIds.has(representative.departmentId));
-}
+export const CURRENT_EMPLOYEE_ID = 'emp-1';
 
 export interface RepresentativeScope {
   customerId: string;
   siteId: string;
   departmentId: string;
-}
-
-export function getRepresentativeScope(representativeId: string): RepresentativeScope | null {
-  const representative = getRepresentativeById(representativeId);
-  if (!representative) return null;
-  const department = getDepartmentById(representative.departmentId);
-  if (!department) return null;
-  const site = getSiteById(department.siteId);
-  if (!site) return null;
-  return { customerId: site.customerId, siteId: site.id, departmentId: department.id };
 }

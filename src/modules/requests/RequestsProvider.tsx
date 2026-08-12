@@ -2,11 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { RequestsContext } from './RequestsContext';
 import type { RequestsContextValue } from './RequestsContext';
-import type { EquipmentRequest, RequestDocument, RequestItem, RequestStatus, RequestVersion } from './types';
+import type { EquipmentRequest, RequestDocument, RequestItem, RequestScope, RequestStatus, RequestVersion } from './types';
 import { SEED_REQUESTS } from './data';
-import { CURRENT_REPRESENTATIVE_ID, getRepresentativeScope } from '../../data/org';
-import { useRole } from '../../context/useRole';
-import { getCurrentActorName } from './actor';
 
 const REQUESTS_STORAGE_KEY = 'goldlink.requests';
 const REQUEST_SEQ_KEY = 'goldlink.requestSeq';
@@ -31,7 +28,6 @@ function nextRequestNumber(): string {
 }
 
 export function RequestsProvider({ children }: { children: ReactNode }) {
-  const { role } = useRole();
   const [requests, setRequests] = useState<EquipmentRequest[]>(readStoredRequests);
 
   // Содержимое прикреплённых файлов живёт только в памяти текущей вкладки —
@@ -45,14 +41,17 @@ export function RequestsProvider({ children }: { children: ReactNode }) {
   }, [requests]);
 
   const value = useMemo<RequestsContextValue>(() => {
-    const authorName = getCurrentActorName(role);
-
     // Общая точка входа для любого изменения состава: пишет новую версию в
     // историю и одновременно обновляет актуальный items заявки. Версии не
     // создаются (и состав не меняется) для заявок в статусе «Исполнена» —
     // это же условие используется в UI, чтобы скрыть «Редактировать» и
     // «Восстановить эту версию», здесь — как страховка на уровне данных.
-    const appendVersion = (request: EquipmentRequest, items: RequestItem[], note?: string): EquipmentRequest => {
+    const appendVersion = (
+      request: EquipmentRequest,
+      items: RequestItem[],
+      authorName: string,
+      note?: string,
+    ): EquipmentRequest => {
       if (request.status === 'done') return request;
       const lastVersion = request.versions[request.versions.length - 1];
       const version: RequestVersion = {
@@ -65,11 +64,7 @@ export function RequestsProvider({ children }: { children: ReactNode }) {
       return { ...request, items, versions: [...request.versions, version] };
     };
 
-    const createRequest = (items: RequestItem[]): EquipmentRequest => {
-      const scope = getRepresentativeScope(CURRENT_REPRESENTATIVE_ID);
-      if (!scope) {
-        throw new Error('Unknown representative scope');
-      }
+    const createRequest = (items: RequestItem[], scope: RequestScope, authorName: string): EquipmentRequest => {
       const createdAt = new Date().toISOString();
       const request: EquipmentRequest = {
         id: `req-${Date.now()}`,
@@ -79,7 +74,7 @@ export function RequestsProvider({ children }: { children: ReactNode }) {
         customerId: scope.customerId,
         siteId: scope.siteId,
         departmentId: scope.departmentId,
-        representativeId: CURRENT_REPRESENTATIVE_ID,
+        representativeId: scope.representativeId,
         items,
         documents: [],
         versions: [{ version: 1, createdAt, author: authorName, items }],
@@ -88,8 +83,10 @@ export function RequestsProvider({ children }: { children: ReactNode }) {
       return request;
     };
 
-    const updateItems = (requestId: string, items: RequestItem[]) => {
-      setRequests((prev) => prev.map((request) => (request.id === requestId ? appendVersion(request, items) : request)));
+    const updateItems = (requestId: string, items: RequestItem[], authorName: string) => {
+      setRequests((prev) =>
+        prev.map((request) => (request.id === requestId ? appendVersion(request, items, authorName) : request)),
+      );
     };
 
     const updateStatus = (requestId: string, status: RequestStatus) => {
@@ -113,19 +110,19 @@ export function RequestsProvider({ children }: { children: ReactNode }) {
 
     const getDocumentFile = (documentId: string) => fileStoreRef.current.get(documentId);
 
-    const restoreVersion = (requestId: string, versionNumber: number) => {
+    const restoreVersion = (requestId: string, versionNumber: number, authorName: string) => {
       setRequests((prev) =>
         prev.map((request) => {
           if (request.id !== requestId) return request;
           const target = request.versions.find((version) => version.version === versionNumber);
           if (!target) return request;
-          return appendVersion(request, target.items, `Восстановлено из версии ${versionNumber}`);
+          return appendVersion(request, target.items, authorName, `Восстановлено из версии ${versionNumber}`);
         }),
       );
     };
 
     return { requests, createRequest, updateItems, updateStatus, addDocument, getDocumentFile, restoreVersion };
-  }, [requests, role]);
+  }, [requests]);
 
   return <RequestsContext.Provider value={value}>{children}</RequestsContext.Provider>;
 }

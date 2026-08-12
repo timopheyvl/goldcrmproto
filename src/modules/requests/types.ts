@@ -40,6 +40,17 @@ export interface RequestVersion {
   note?: string;
 }
 
+/** Атрибуция новой заявки — вычисляется вызывающей стороной из живого
+ * профиля текущего представителя (см. src/data/useEntities.ts), а не внутри
+ * RequestsProvider: провайдер стоит выше ObjectsProvider/AdminProvider в
+ * дереве провайдеров и не имеет доступа к их живым данным. */
+export interface RequestScope {
+  customerId: string;
+  siteId: string;
+  departmentId: string;
+  representativeId: string;
+}
+
 export interface EquipmentRequest {
   id: string;
   number: string;
