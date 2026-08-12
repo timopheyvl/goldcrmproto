@@ -1,6 +1,6 @@
 import { createContext } from 'react';
-import type { Department, Site } from '../../data/org';
-import type { MaterialRecord, Stage, StageInput, StageLimitedInput } from './types';
+import type { Department, Representative, Site } from '../../data/org';
+import type { MaterialRecord, RepresentativeInput, Stage, StageInput, StageLimitedInput } from './types';
 
 export interface DeleteGuardResult {
   allowed: boolean;
@@ -9,16 +9,27 @@ export interface DeleteGuardResult {
 
 export interface ObjectsContextValue {
   sites: Site[];
+  /** Создание объекта — только модуль «Управление», привязка к заказчику из контекста. */
+  addSite: (customerId: string, input: Omit<Site, 'id' | 'customerId'>) => string;
   updateSite: (siteId: string, patch: Partial<Omit<Site, 'id' | 'customerId'>>) => void;
   canDeleteSite: (siteId: string) => DeleteGuardResult;
   deleteSite: (siteId: string) => void;
 
   departments: Department[];
   getDepartmentsBySite: (siteId: string) => Department[];
-  addDepartment: (siteId: string, name: string) => void;
+  /** Создание службы — модуль «Управление», привязка к объекту из контекста. */
+  addDepartment: (siteId: string, name: string) => string;
   updateDepartment: (departmentId: string, name: string) => void;
   canDeleteDepartment: (departmentId: string) => DeleteGuardResult;
   deleteDepartment: (departmentId: string) => void;
+
+  representatives: Representative[];
+  getRepresentativesByDepartment: (departmentId: string) => Representative[];
+  /** Создание представителя — привязка к службе из контекста, после создания не меняется. */
+  addRepresentative: (departmentId: string, input: RepresentativeInput) => string;
+  updateRepresentative: (representativeId: string, patch: Partial<RepresentativeInput>) => void;
+  canDeleteRepresentative: (representativeId: string) => DeleteGuardResult;
+  deleteRepresentative: (representativeId: string) => void;
 
   materials: MaterialRecord[];
   getMaterialsBySite: (siteId: string) => MaterialRecord[];

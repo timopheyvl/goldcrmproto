@@ -2,6 +2,21 @@ export interface Customer {
   id: string;
   name: string;
   inn: string;
+  contactPerson: string;
+  /** Контактный email заказчика — не логин, уникальность не проверяется. */
+  email: string;
+  phone: string;
+  address: string;
+  comment: string;
+}
+
+export interface Manager {
+  id: string;
+  fullName: string;
+  /** Email = логин; уникален глобально по всем ролям (см. isManagerEmailTaken в модуле «Управление»). */
+  email: string;
+  phone: string;
+  position: string;
 }
 
 export interface Site {
@@ -26,12 +41,78 @@ export interface Representative {
   id: string;
   departmentId: string;
   fullName: string;
+  /** Email = логин; уникален глобально по всем ролям (менеджеры/представители/сотрудники). */
+  email: string;
+  phone: string;
+  position: string;
+}
+
+export interface Employee {
+  id: string;
+  /** Сотрудник заказчика не привязан к объекту/службе — только к заказчику. */
+  customerId: string;
+  fullName: string;
+  /** Email = логин; уникален глобально по всем ролям. */
+  email: string;
+  phone: string;
+  position: string;
 }
 
 export const CUSTOMERS: Customer[] = [
-  { id: 'cu-1', name: 'АО «Кузбассуголь»', inn: '4205123456' },
-  { id: 'cu-2', name: 'ООО «Сибруда»', inn: '5406987654' },
-  { id: 'cu-3', name: 'ПАО «Дальресурс»', inn: '8401112233' },
+  {
+    id: 'cu-1',
+    name: 'АО «Кузбассуголь»',
+    inn: '4205123456',
+    contactPerson: 'Логинов Сергей Петрович',
+    email: 's.loginov@kuzbassugol.ru',
+    phone: '+7 (3842) 55-10-20',
+    address: '652600, Кемеровская область, г. Междуреченск, ул. Кузнецкая, 12',
+    comment: '',
+  },
+  {
+    id: 'cu-2',
+    name: 'ООО «Сибруда»',
+    inn: '5406987654',
+    contactPerson: 'Ильина Ольга Андреевна',
+    email: 'o.ilina@sibruda.ru',
+    phone: '+7 (383) 220-45-67',
+    address: '630032, Новосибирская область, г. Искитим, ул. Заводская, 5',
+    comment: '',
+  },
+  {
+    id: 'cu-3',
+    name: 'ПАО «Дальресурс»',
+    inn: '8401112233',
+    contactPerson: 'Гончаров Виктор Анатольевич',
+    email: 'v.goncharov@dalresurs.ru',
+    phone: '+7 (4212) 33-77-01',
+    address: '680000, Хабаровский край, п. Чегдомын, ул. Горная, 8',
+    comment: 'Ключевой заказчик по угольному направлению',
+  },
+];
+
+export const MANAGERS: Manager[] = [
+  {
+    id: 'mgr-1',
+    fullName: 'Соколова Елена Викторовна',
+    email: 'e.sokolova@goldlink.ru',
+    phone: '+7 (495) 700-11-22',
+    position: 'Менеджер по проектам',
+  },
+  {
+    id: 'mgr-2',
+    fullName: 'Волков Артём Сергеевич',
+    email: 'a.volkov@goldlink.ru',
+    phone: '+7 (495) 700-11-23',
+    position: 'Менеджер по продажам',
+  },
+  {
+    id: 'mgr-3',
+    fullName: 'Ковалёва Наталья Игоревна',
+    email: 'n.kovaleva@goldlink.ru',
+    phone: '+7 (495) 700-11-24',
+    position: 'Технический менеджер',
+  },
 ];
 
 export const SITES: Site[] = [
@@ -92,10 +173,57 @@ export const DEPARTMENTS: Department[] = [
 ];
 
 export const REPRESENTATIVES: Representative[] = [
-  { id: 'rep-1', departmentId: 'd-1', fullName: 'Терехов Игорь Валерьевич' },
-  { id: 'rep-2', departmentId: 'd-4', fullName: 'Симонова Анна Дмитриевна' },
-  { id: 'rep-3', departmentId: 'd-6', fullName: 'Костров Павел Николаевич' },
-  { id: 'rep-4', departmentId: 'd-5', fullName: 'Уварова Мария Сергеевна' },
+  {
+    id: 'rep-1',
+    departmentId: 'd-1',
+    fullName: 'Терехов Игорь Валерьевич',
+    email: 'i.terehov@kuzbassugol.ru',
+    phone: '+7 (3842) 55-10-31',
+    position: 'Главный механик',
+  },
+  {
+    id: 'rep-2',
+    departmentId: 'd-4',
+    fullName: 'Симонова Анна Дмитриевна',
+    email: 'a.simonova@sibruda.ru',
+    phone: '+7 (383) 220-45-71',
+    position: 'Главный механик',
+  },
+  {
+    id: 'rep-3',
+    departmentId: 'd-6',
+    fullName: 'Костров Павел Николаевич',
+    email: 'p.kostrov@dalresurs.ru',
+    phone: '+7 (4212) 33-77-11',
+    position: 'Начальник снабжения',
+  },
+  {
+    id: 'rep-4',
+    departmentId: 'd-5',
+    fullName: 'Уварова Мария Сергеевна',
+    email: 'm.uvarova@sibruda.ru',
+    phone: '+7 (383) 220-45-72',
+    position: 'Главный энергетик',
+  },
+];
+
+export const EMPLOYEES: Employee[] = [
+  {
+    id: 'emp-1',
+    customerId: 'cu-1',
+    fullName: 'Дьячков Роман Олегович',
+    email: 'r.dyachkov@kuzbassugol.ru',
+    phone: '+7 (3842) 55-10-40',
+    position: 'Специалист по снабжению',
+  },
+  {
+    id: 'emp-2',
+    customerId: 'cu-3',
+    fullName: 'Фролова Ксения Андреевна',
+    email: 'k.frolova@dalresurs.ru',
+    phone: '+7 (4212) 33-77-20',
+    position: 'Секретарь',
+  },
 ];
 
 /**
@@ -119,6 +247,18 @@ export function getDepartmentById(id: string): Department | undefined {
 
 export function getRepresentativeById(id: string): Representative | undefined {
   return REPRESENTATIVES.find((representative) => representative.id === id);
+}
+
+export function getManagerById(id: string): Manager | undefined {
+  return MANAGERS.find((manager) => manager.id === id);
+}
+
+export function getEmployeeById(id: string): Employee | undefined {
+  return EMPLOYEES.find((employee) => employee.id === id);
+}
+
+export function getEmployeesByCustomer(customerId: string): Employee[] {
+  return EMPLOYEES.filter((employee) => employee.customerId === customerId);
 }
 
 export function getSitesByCustomer(customerId: string): Site[] {

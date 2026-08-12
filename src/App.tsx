@@ -15,6 +15,8 @@ import { OrderEditPage } from './modules/requests/OrderEditPage';
 import { ObjectsProvider } from './modules/objects/ObjectsProvider';
 import { ObjectsPage } from './modules/objects/ObjectsPage';
 import { ObjectDetailPage } from './modules/objects/ObjectDetailPage';
+import { AdminProvider } from './modules/admin/AdminProvider';
+import { AdminPage } from './modules/admin/AdminPage';
 import { MODULES, DEFAULT_MODULE_PATH } from './modules';
 
 export function App() {
@@ -23,37 +25,41 @@ export function App() {
       <VendorProvider>
         <RequestsProvider>
           <ObjectsProvider>
-            <CartProvider>
-              <BrowserRouter>
-                <Routes>
-                  <Route element={<AppShell />}>
-                    <Route index element={<Navigate to={DEFAULT_MODULE_PATH} replace />} />
-                    {MODULES.map((module) =>
-                      module.key === 'catalog' ? (
-                        <Route key={module.key} path={module.path} element={<CatalogPage />} />
-                      ) : module.key === 'requests' ? (
-                        <Route key={module.key} path={module.path} element={<RequestsPage />} />
-                      ) : module.key === 'objects' ? (
-                        <Route key={module.key} path={module.path} element={<ObjectsPage />} />
-                      ) : (
-                        <Route
-                          key={module.key}
-                          path={module.path}
-                          element={<PlaceholderPage module={module} />}
-                        />
-                      ),
-                    )}
-                    <Route path="/catalog/import" element={<ImportPage />} />
-                    <Route path="/catalog/vendors" element={<VendorsPage />} />
-                    <Route path="/catalog/:id" element={<ProductPage />} />
-                    <Route path="/requests/:id" element={<RequestDetailPage />} />
-                    <Route path="/orders/:id/edit" element={<OrderEditPage />} />
-                    <Route path="/objects/:id" element={<ObjectDetailPage />} />
-                    <Route path="*" element={<Navigate to={DEFAULT_MODULE_PATH} replace />} />
-                  </Route>
-                </Routes>
-              </BrowserRouter>
-            </CartProvider>
+            <AdminProvider>
+              <CartProvider>
+                <BrowserRouter>
+                  <Routes>
+                    <Route element={<AppShell />}>
+                      <Route index element={<Navigate to={DEFAULT_MODULE_PATH} replace />} />
+                      {MODULES.map((module) =>
+                        module.key === 'catalog' ? (
+                          <Route key={module.key} path={module.path} element={<CatalogPage />} />
+                        ) : module.key === 'requests' ? (
+                          <Route key={module.key} path={module.path} element={<RequestsPage />} />
+                        ) : module.key === 'objects' ? (
+                          <Route key={module.key} path={module.path} element={<ObjectsPage />} />
+                        ) : module.key === 'admin' ? (
+                          <Route key={module.key} path={module.path} element={<AdminPage />} />
+                        ) : (
+                          <Route
+                            key={module.key}
+                            path={module.path}
+                            element={<PlaceholderPage module={module} />}
+                          />
+                        ),
+                      )}
+                      <Route path="/catalog/import" element={<ImportPage />} />
+                      <Route path="/catalog/vendors" element={<VendorsPage />} />
+                      <Route path="/catalog/:id" element={<ProductPage />} />
+                      <Route path="/requests/:id" element={<RequestDetailPage />} />
+                      <Route path="/orders/:id/edit" element={<OrderEditPage />} />
+                      <Route path="/objects/:id" element={<ObjectDetailPage />} />
+                      <Route path="*" element={<Navigate to={DEFAULT_MODULE_PATH} replace />} />
+                    </Route>
+                  </Routes>
+                </BrowserRouter>
+              </CartProvider>
+            </AdminProvider>
           </ObjectsProvider>
         </RequestsProvider>
       </VendorProvider>

@@ -60,7 +60,7 @@ export const SEED_REQUESTS: EquipmentRequest[] = [
       {
         version: 2,
         createdAt: '2026-08-04T16:05:00.000Z',
-        author: 'Менеджер GoldLink',
+        author: 'Соколова Елена Викторовна',
         items: [item('p-4', 1), item('p-16', 8)],
       },
       {

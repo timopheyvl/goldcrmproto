@@ -6,11 +6,12 @@ import { SEED_MATERIALS } from './data';
 import { SEED_STAGES } from './stagesData';
 import type { MaterialFileMeta, MaterialRecord, Stage } from './types';
 import { DEPARTMENTS, REPRESENTATIVES, SITES } from '../../data/org';
-import type { Department, Site } from '../../data/org';
+import type { Department, Representative, Site } from '../../data/org';
 import { useRequests } from '../requests/useRequests';
 
 const SITES_STORAGE_KEY = 'goldlink.objects.sites';
 const DEPARTMENTS_STORAGE_KEY = 'goldlink.objects.departments';
+const REPRESENTATIVES_STORAGE_KEY = 'goldlink.objects.representatives';
 const MATERIALS_STORAGE_KEY = 'goldlink.objects.materials';
 const STAGES_STORAGE_KEY = 'goldlink.objects.stages';
 
@@ -30,6 +31,9 @@ export function ObjectsProvider({ children }: { children: ReactNode }) {
 
   const [sites, setSites] = useState<Site[]>(() => readStored(SITES_STORAGE_KEY, SITES));
   const [departments, setDepartments] = useState<Department[]>(() => readStored(DEPARTMENTS_STORAGE_KEY, DEPARTMENTS));
+  const [representatives, setRepresentatives] = useState<Representative[]>(() =>
+    readStored(REPRESENTATIVES_STORAGE_KEY, REPRESENTATIVES),
+  );
   const [materials, setMaterials] = useState<MaterialRecord[]>(() => readStored(MATERIALS_STORAGE_KEY, SEED_MATERIALS));
   const [stages, setStages] = useState<Stage[]>(() => readStored(STAGES_STORAGE_KEY, SEED_STAGES));
 
@@ -47,6 +51,10 @@ export function ObjectsProvider({ children }: { children: ReactNode }) {
   }, [departments]);
 
   useEffect(() => {
+    window.localStorage.setItem(REPRESENTATIVES_STORAGE_KEY, JSON.stringify(representatives));
+  }, [representatives]);
+
+  useEffect(() => {
     window.localStorage.setItem(MATERIALS_STORAGE_KEY, JSON.stringify(materials));
   }, [materials]);
 
@@ -55,6 +63,13 @@ export function ObjectsProvider({ children }: { children: ReactNode }) {
   }, [stages]);
 
   const value = useMemo<ObjectsContextValue>(() => {
+    const addSite: ObjectsContextValue['addSite'] = (customerId, input) => {
+      const id = `s-${Date.now()}`;
+      const site: Site = { id, customerId, ...input };
+      setSites((prev) => [...prev, site]);
+      return id;
+    };
+
     const updateSite: ObjectsContextValue['updateSite'] = (siteId, patch) => {
       setSites((prev) => prev.map((site) => (site.id === siteId ? { ...site, ...patch } : site)));
     };
@@ -84,8 +99,10 @@ export function ObjectsProvider({ children }: { children: ReactNode }) {
       departments.filter((department) => department.siteId === siteId);
 
     const addDepartment: ObjectsContextValue['addDepartment'] = (siteId, name) => {
-      const department: Department = { id: `d-${Date.now()}`, siteId, name };
+      const id = `d-${Date.now()}`;
+      const department: Department = { id, siteId, name };
       setDepartments((prev) => [...prev, department]);
+      return id;
     };
 
     const updateDepartment: ObjectsContextValue['updateDepartment'] = (departmentId, name) => {
@@ -95,7 +112,7 @@ export function ObjectsProvider({ children }: { children: ReactNode }) {
     };
 
     const canDeleteDepartment: ObjectsContextValue['canDeleteDepartment'] = (departmentId) => {
-      const representativeCount = REPRESENTATIVES.filter(
+      const representativeCount = representatives.filter(
         (representative) => representative.departmentId === departmentId,
       ).length;
       if (representativeCount > 0) {
@@ -111,6 +128,37 @@ export function ObjectsProvider({ children }: { children: ReactNode }) {
     const deleteDepartment: ObjectsContextValue['deleteDepartment'] = (departmentId) => {
       if (!canDeleteDepartment(departmentId).allowed) return;
       setDepartments((prev) => prev.filter((department) => department.id !== departmentId));
+    };
+
+    const getRepresentativesByDepartment: ObjectsContextValue['getRepresentativesByDepartment'] = (departmentId) =>
+      representatives.filter((representative) => representative.departmentId === departmentId);
+
+    const addRepresentative: ObjectsContextValue['addRepresentative'] = (departmentId, input) => {
+      const id = `rep-${Date.now()}`;
+      const representative: Representative = { id, departmentId, ...input };
+      setRepresentatives((prev) => [...prev, representative]);
+      return id;
+    };
+
+    const updateRepresentative: ObjectsContextValue['updateRepresentative'] = (representativeId, patch) => {
+      setRepresentatives((prev) =>
+        prev.map((representative) =>
+          representative.id === representativeId ? { ...representative, ...patch } : representative,
+        ),
+      );
+    };
+
+    const canDeleteRepresentative: ObjectsContextValue['canDeleteRepresentative'] = (representativeId) => {
+      const requestCount = requests.filter((request) => request.representativeId === representativeId).length;
+      if (requestCount > 0) {
+        return { allowed: false, reason: `Нельзя удалить: есть заявки (${requestCount})` };
+      }
+      return { allowed: true };
+    };
+
+    const deleteRepresentative: ObjectsContextValue['deleteRepresentative'] = (representativeId) => {
+      if (!canDeleteRepresentative(representativeId).allowed) return;
+      setRepresentatives((prev) => prev.filter((representative) => representative.id !== representativeId));
     };
 
     const getMaterialsBySite: ObjectsContextValue['getMaterialsBySite'] = (siteId) =>
@@ -256,6 +304,7 @@ export function ObjectsProvider({ children }: { children: ReactNode }) {
 
     return {
       sites,
+      addSite,
       updateSite,
       canDeleteSite,
       deleteSite,
@@ -265,6 +314,12 @@ export function ObjectsProvider({ children }: { children: ReactNode }) {
       updateDepartment,
       canDeleteDepartment,
       deleteDepartment,
+      representatives,
+      getRepresentativesByDepartment,
+      addRepresentative,
+      updateRepresentative,
+      canDeleteRepresentative,
+      deleteRepresentative,
       materials,
       getMaterialsBySite,
       addMaterial,
@@ -285,7 +340,7 @@ export function ObjectsProvider({ children }: { children: ReactNode }) {
       removeStageFile,
       getStageFile,
     };
-  }, [sites, departments, materials, stages, requests]);
+  }, [sites, departments, representatives, materials, stages, requests]);
 
   return <ObjectsContext.Provider value={value}>{children}</ObjectsContext.Provider>;
 }

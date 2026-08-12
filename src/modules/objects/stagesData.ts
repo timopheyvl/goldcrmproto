@@ -39,7 +39,7 @@ export const SEED_STAGES: Stage[] = [
     startDate: '2026-08-26',
     endDate: '2026-09-15',
     status: 'planned',
-    assignee: 'Менеджер GoldLink',
+    assignee: 'Соколова Елена Викторовна',
     progress: 0,
     dependsOn: 'stage-2',
     files: [],

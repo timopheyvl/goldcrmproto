@@ -1,3 +1,10 @@
+export interface RepresentativeInput {
+  fullName: string;
+  email: string;
+  phone: string;
+  position: string;
+}
+
 export interface MaterialFileMeta {
   id: string;
   name: string;
