@@ -8,6 +8,12 @@ export interface Site {
   id: string;
   customerId: string;
   name: string;
+  description: string;
+  location: string;
+  /** Строка "широта, долгота" — прототип не интегрирует карту, только текст. */
+  geo: string;
+  /** Дата начала проекта, YYYY-MM-DD. */
+  projectStartDate: string;
 }
 
 export interface Department {
@@ -29,11 +35,51 @@ export const CUSTOMERS: Customer[] = [
 ];
 
 export const SITES: Site[] = [
-  { id: 's-1', customerId: 'cu-1', name: 'Шахта «Распадская-2»' },
-  { id: 's-2', customerId: 'cu-1', name: 'Обогатительная фабрика «Кузбасская»' },
-  { id: 's-3', customerId: 'cu-2', name: 'ГОК «Сибирский»' },
-  { id: 's-4', customerId: 'cu-2', name: 'Рудник «Восточный»' },
-  { id: 's-5', customerId: 'cu-3', name: 'Шахта «Северная»' },
+  {
+    id: 's-1',
+    customerId: 'cu-1',
+    name: 'Шахта «Распадская-2»',
+    description: 'Подземная добыча коксующегося угля, действующий горный отвод.',
+    location: 'Кемеровская область, г. Междуреченск',
+    geo: '53.6935, 88.0637',
+    projectStartDate: '2025-03-10',
+  },
+  {
+    id: 's-2',
+    customerId: 'cu-1',
+    name: 'Обогатительная фабрика «Кузбасская»',
+    description: 'Обогащение угля, поставляемого с шахт группы.',
+    location: 'Кемеровская область, г. Прокопьевск',
+    geo: '53.9057, 86.7194',
+    projectStartDate: '2025-05-20',
+  },
+  {
+    id: 's-3',
+    customerId: 'cu-2',
+    name: 'ГОК «Сибирский»',
+    description: 'Открытая добыча и первичное обогащение железной руды.',
+    location: 'Новосибирская область, г. Искитим',
+    geo: '54.6403, 83.3039',
+    projectStartDate: '2025-01-15',
+  },
+  {
+    id: 's-4',
+    customerId: 'cu-2',
+    name: 'Рудник «Восточный»',
+    description: 'Подземная добыча полиметаллических руд.',
+    location: 'Новосибирская область, п. Линёво',
+    geo: '54.5062, 83.4361',
+    projectStartDate: '2025-07-01',
+  },
+  {
+    id: 's-5',
+    customerId: 'cu-3',
+    name: 'Шахта «Северная»',
+    description: 'Подземная добыча угля, обособленный участок.',
+    location: 'Хабаровский край, п. Чегдомын',
+    geo: '51.1319, 132.9522',
+    projectStartDate: '2025-09-05',
+  },
 ];
 
 export const DEPARTMENTS: Department[] = [
@@ -81,6 +127,17 @@ export function getSitesByCustomer(customerId: string): Site[] {
 
 export function getDepartmentsBySite(siteId: string): Department[] {
   return DEPARTMENTS.filter((department) => department.siteId === siteId);
+}
+
+/** Представители всех объектов/служб данного заказчика — для полей вида
+ * «ответственный из пользователей своего заказчика». */
+export function getRepresentativesByCustomer(customerId: string): Representative[] {
+  const departmentIds = new Set(
+    SITES.filter((site) => site.customerId === customerId).flatMap((site) =>
+      getDepartmentsBySite(site.id).map((department) => department.id),
+    ),
+  );
+  return REPRESENTATIVES.filter((representative) => departmentIds.has(representative.departmentId));
 }
 
 export interface RepresentativeScope {
