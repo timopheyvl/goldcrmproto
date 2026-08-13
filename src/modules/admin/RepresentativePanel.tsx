@@ -17,7 +17,8 @@ interface RepresentativePanelProps {
  * службе показана только как контекст (read-only) и после создания не меняется.
  */
 export function RepresentativePanel({ representative, onDeleted }: RepresentativePanelProps) {
-  const { departments, sites, updateRepresentative, canDeleteRepresentative, deleteRepresentative } = useObjects();
+  const { departments, sites, updateRepresentative, setRepresentativeActive, canDeleteRepresentative, deleteRepresentative } =
+    useObjects();
   const { customers, isEmailTaken } = useAdmin();
 
   const [fullName, setFullName] = useState('');
@@ -88,6 +89,13 @@ export function RepresentativePanel({ representative, onDeleted }: Representativ
         Представитель заказчика · Служба: {department?.name ?? '—'} · Объект: {site?.name ?? '—'} · Заказчик:{' '}
         {customerName}
       </p>
+      <span
+        className={
+          representative.active ? 'admin-status-badge admin-status-badge--active' : 'admin-status-badge admin-status-badge--inactive'
+        }
+      >
+        {representative.active ? 'Активен' : 'Неактивен'}
+      </span>
 
       <label className="stage-field">
         <span className="stage-field__label">ФИО</span>
@@ -139,6 +147,13 @@ export function RepresentativePanel({ representative, onDeleted }: Representativ
       </label>
 
       <div className="stage-detail__actions">
+        <button
+          type="button"
+          className="btn btn--secondary"
+          onClick={() => setRepresentativeActive(representative.id, !representative.active)}
+        >
+          {representative.active ? 'Деактивировать' : 'Активировать'}
+        </button>
         <button
           type="button"
           className="btn btn--danger"

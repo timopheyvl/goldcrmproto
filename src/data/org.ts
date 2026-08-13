@@ -8,6 +8,8 @@ export interface Customer {
   phone: string;
   address: string;
   comment: string;
+  /** Мягкое отключение (не удаление) — связи и история сохраняются, каскадно на объекты/службы/представителей не распространяется. */
+  active: boolean;
 }
 
 export interface Manager {
@@ -17,6 +19,8 @@ export interface Manager {
   email: string;
   phone: string;
   position: string;
+  /** Мягкое отключение (не удаление) — связи и история сохраняются. */
+  active: boolean;
 }
 
 export interface Site {
@@ -45,6 +49,8 @@ export interface Representative {
   email: string;
   phone: string;
   position: string;
+  /** Мягкое отключение (не удаление) — связи и история сохраняются. */
+  active: boolean;
 }
 
 export interface Employee {
@@ -56,6 +62,8 @@ export interface Employee {
   email: string;
   phone: string;
   position: string;
+  /** Мягкое отключение (не удаление) — связи и история сохраняются. */
+  active: boolean;
 }
 
 export const CUSTOMERS: Customer[] = [
@@ -68,6 +76,7 @@ export const CUSTOMERS: Customer[] = [
     phone: '+7 (3842) 55-10-20',
     address: '652600, Кемеровская область, г. Междуреченск, ул. Кузнецкая, 12',
     comment: '',
+    active: true,
   },
   {
     id: 'cu-2',
@@ -78,6 +87,7 @@ export const CUSTOMERS: Customer[] = [
     phone: '+7 (383) 220-45-67',
     address: '630032, Новосибирская область, г. Искитим, ул. Заводская, 5',
     comment: '',
+    active: true,
   },
   {
     id: 'cu-3',
@@ -88,6 +98,7 @@ export const CUSTOMERS: Customer[] = [
     phone: '+7 (4212) 33-77-01',
     address: '680000, Хабаровский край, п. Чегдомын, ул. Горная, 8',
     comment: 'Ключевой заказчик по угольному направлению',
+    active: true,
   },
 ];
 
@@ -98,6 +109,7 @@ export const MANAGERS: Manager[] = [
     email: 'e.sokolova@goldlink.ru',
     phone: '+7 (495) 700-11-22',
     position: 'Менеджер по проектам',
+    active: true,
   },
   {
     id: 'mgr-2',
@@ -105,6 +117,7 @@ export const MANAGERS: Manager[] = [
     email: 'a.volkov@goldlink.ru',
     phone: '+7 (495) 700-11-23',
     position: 'Менеджер по продажам',
+    active: true,
   },
   {
     id: 'mgr-3',
@@ -112,6 +125,7 @@ export const MANAGERS: Manager[] = [
     email: 'n.kovaleva@goldlink.ru',
     phone: '+7 (495) 700-11-24',
     position: 'Технический менеджер',
+    active: true,
   },
 ];
 
@@ -180,6 +194,7 @@ export const REPRESENTATIVES: Representative[] = [
     email: 'i.terehov@kuzbassugol.ru',
     phone: '+7 (3842) 55-10-31',
     position: 'Главный механик',
+    active: true,
   },
   {
     id: 'rep-2',
@@ -188,6 +203,7 @@ export const REPRESENTATIVES: Representative[] = [
     email: 'a.simonova@sibruda.ru',
     phone: '+7 (383) 220-45-71',
     position: 'Главный механик',
+    active: true,
   },
   {
     id: 'rep-3',
@@ -196,6 +212,7 @@ export const REPRESENTATIVES: Representative[] = [
     email: 'p.kostrov@dalresurs.ru',
     phone: '+7 (4212) 33-77-11',
     position: 'Начальник снабжения',
+    active: true,
   },
   {
     id: 'rep-4',
@@ -204,6 +221,7 @@ export const REPRESENTATIVES: Representative[] = [
     email: 'm.uvarova@sibruda.ru',
     phone: '+7 (383) 220-45-72',
     position: 'Главный энергетик',
+    active: true,
   },
 ];
 
@@ -215,6 +233,7 @@ export const EMPLOYEES: Employee[] = [
     email: 'r.dyachkov@kuzbassugol.ru',
     phone: '+7 (3842) 55-10-40',
     position: 'Специалист по снабжению',
+    active: true,
   },
   {
     id: 'emp-2',
@@ -223,6 +242,7 @@ export const EMPLOYEES: Employee[] = [
     email: 'k.frolova@dalresurs.ru',
     phone: '+7 (4212) 33-77-20',
     position: 'Секретарь',
+    active: true,
   },
 ];
 

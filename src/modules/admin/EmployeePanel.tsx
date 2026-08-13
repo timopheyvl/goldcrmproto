@@ -13,7 +13,7 @@ interface EmployeePanelProps {
 
 /** Карточка существующего сотрудника заказчика — автосохранение по blur. */
 export function EmployeePanel({ employee, onDeleted }: EmployeePanelProps) {
-  const { customers, updateEmployee, canDeleteEmployee, deleteEmployee, isEmailTaken } = useAdmin();
+  const { customers, updateEmployee, setEmployeeActive, canDeleteEmployee, deleteEmployee, isEmailTaken } = useAdmin();
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -78,6 +78,9 @@ export function EmployeePanel({ employee, onDeleted }: EmployeePanelProps) {
     <div className="admin-panel">
       <h2 className="admin-panel__title">{employee.fullName}</h2>
       <p className="admin-panel__subtitle">Сотрудник заказчика · Заказчик: {customerName}</p>
+      <span className={employee.active ? 'admin-status-badge admin-status-badge--active' : 'admin-status-badge admin-status-badge--inactive'}>
+        {employee.active ? 'Активен' : 'Неактивен'}
+      </span>
 
       <label className="stage-field">
         <span className="stage-field__label">ФИО</span>
@@ -129,6 +132,9 @@ export function EmployeePanel({ employee, onDeleted }: EmployeePanelProps) {
       </label>
 
       <div className="stage-detail__actions">
+        <button type="button" className="btn btn--secondary" onClick={() => setEmployeeActive(employee.id, !employee.active)}>
+          {employee.active ? 'Деактивировать' : 'Активировать'}
+        </button>
         <button
           type="button"
           className="btn btn--danger"

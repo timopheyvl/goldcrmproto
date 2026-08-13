@@ -26,13 +26,18 @@ function readStored<T>(key: string, fallback: T): T {
   }
 }
 
+/** Бэкофилл поля active для представителей, сохранённых в localStorage до его введения — иначе старые записи молча становятся «неактивными». */
+function withActiveBackfill<T extends { active?: boolean }>(items: T[]): (T & { active: boolean })[] {
+  return items.map((item) => ({ ...item, active: item.active ?? true }));
+}
+
 export function ObjectsProvider({ children }: { children: ReactNode }) {
   const { requests } = useRequests();
 
   const [sites, setSites] = useState<Site[]>(() => readStored(SITES_STORAGE_KEY, SITES));
   const [departments, setDepartments] = useState<Department[]>(() => readStored(DEPARTMENTS_STORAGE_KEY, DEPARTMENTS));
   const [representatives, setRepresentatives] = useState<Representative[]>(() =>
-    readStored(REPRESENTATIVES_STORAGE_KEY, REPRESENTATIVES),
+    withActiveBackfill(readStored(REPRESENTATIVES_STORAGE_KEY, REPRESENTATIVES)),
   );
   const [materials, setMaterials] = useState<MaterialRecord[]>(() => readStored(MATERIALS_STORAGE_KEY, SEED_MATERIALS));
   const [stages, setStages] = useState<Stage[]>(() => readStored(STAGES_STORAGE_KEY, SEED_STAGES));
@@ -135,7 +140,7 @@ export function ObjectsProvider({ children }: { children: ReactNode }) {
 
     const addRepresentative: ObjectsContextValue['addRepresentative'] = (departmentId, input) => {
       const id = `rep-${Date.now()}`;
-      const representative: Representative = { id, departmentId, ...input };
+      const representative: Representative = { id, departmentId, active: true, ...input };
       setRepresentatives((prev) => [...prev, representative]);
       return id;
     };
@@ -144,6 +149,14 @@ export function ObjectsProvider({ children }: { children: ReactNode }) {
       setRepresentatives((prev) =>
         prev.map((representative) =>
           representative.id === representativeId ? { ...representative, ...patch } : representative,
+        ),
+      );
+    };
+
+    const setRepresentativeActive: ObjectsContextValue['setRepresentativeActive'] = (representativeId, active) => {
+      setRepresentatives((prev) =>
+        prev.map((representative) =>
+          representative.id === representativeId ? { ...representative, active } : representative,
         ),
       );
     };
@@ -318,6 +331,7 @@ export function ObjectsProvider({ children }: { children: ReactNode }) {
       getRepresentativesByDepartment,
       addRepresentative,
       updateRepresentative,
+      setRepresentativeActive,
       canDeleteRepresentative,
       deleteRepresentative,
       materials,

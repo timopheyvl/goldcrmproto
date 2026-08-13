@@ -22,13 +22,22 @@ function readStored<T>(key: string, fallback: T): T {
   }
 }
 
+/** Бэкофилл поля active для данных, сохранённых в localStorage до его введения — иначе старые записи молча становятся «неактивными». */
+function withActiveBackfill<T extends { active?: boolean }>(items: T[]): (T & { active: boolean })[] {
+  return items.map((item) => ({ ...item, active: item.active ?? true }));
+}
+
 export function AdminProvider({ children }: { children: ReactNode }) {
   const { sites, departments, stages, representatives } = useObjects();
   const { requests } = useRequests();
 
-  const [customers, setCustomers] = useState<Customer[]>(() => readStored(CUSTOMERS_STORAGE_KEY, CUSTOMERS));
-  const [managers, setManagers] = useState<Manager[]>(() => readStored(MANAGERS_STORAGE_KEY, MANAGERS));
-  const [employees, setEmployees] = useState<Employee[]>(() => readStored(EMPLOYEES_STORAGE_KEY, EMPLOYEES));
+  const [customers, setCustomers] = useState<Customer[]>(() =>
+    withActiveBackfill(readStored(CUSTOMERS_STORAGE_KEY, CUSTOMERS)),
+  );
+  const [managers, setManagers] = useState<Manager[]>(() => withActiveBackfill(readStored(MANAGERS_STORAGE_KEY, MANAGERS)));
+  const [employees, setEmployees] = useState<Employee[]>(() =>
+    withActiveBackfill(readStored(EMPLOYEES_STORAGE_KEY, EMPLOYEES)),
+  );
 
   useEffect(() => {
     window.localStorage.setItem(CUSTOMERS_STORAGE_KEY, JSON.stringify(customers));
@@ -54,13 +63,17 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
     const addManager: AdminContextValue['addManager'] = (input) => {
       const id = `mgr-${Date.now()}`;
-      const manager: Manager = { id, ...input };
+      const manager: Manager = { id, active: true, ...input };
       setManagers((prev) => [...prev, manager]);
       return id;
     };
 
     const updateManager: AdminContextValue['updateManager'] = (managerId, patch) => {
       setManagers((prev) => prev.map((manager) => (manager.id === managerId ? { ...manager, ...patch } : manager)));
+    };
+
+    const setManagerActive: AdminContextValue['setManagerActive'] = (managerId, active) => {
+      setManagers((prev) => prev.map((manager) => (manager.id === managerId ? { ...manager, active } : manager)));
     };
 
     const canDeleteManager: AdminContextValue['canDeleteManager'] = (managerId): DeleteGuardResult => {
@@ -84,7 +97,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
     const addCustomer: AdminContextValue['addCustomer'] = (input) => {
       const id = `cu-${Date.now()}`;
-      const customer: Customer = { id, ...input };
+      const customer: Customer = { id, active: true, ...input };
       setCustomers((prev) => [...prev, customer]);
       return id;
     };
@@ -92,6 +105,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     const updateCustomer: AdminContextValue['updateCustomer'] = (customerId, patch) => {
       setCustomers((prev) =>
         prev.map((customer) => (customer.id === customerId ? { ...customer, ...patch } : customer)),
+      );
+    };
+
+    const setCustomerActive: AdminContextValue['setCustomerActive'] = (customerId, active) => {
+      setCustomers((prev) =>
+        prev.map((customer) => (customer.id === customerId ? { ...customer, active } : customer)),
       );
     };
 
@@ -126,13 +145,19 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
     const addEmployee: AdminContextValue['addEmployee'] = (customerId, input) => {
       const id = `emp-${Date.now()}`;
-      const employee: Employee = { id, customerId, ...input };
+      const employee: Employee = { id, customerId, active: true, ...input };
       setEmployees((prev) => [...prev, employee]);
       return id;
     };
 
     const updateEmployee: AdminContextValue['updateEmployee'] = (employeeId, patch) => {
       setEmployees((prev) => prev.map((employee) => (employee.id === employeeId ? { ...employee, ...patch } : employee)));
+    };
+
+    const setEmployeeActive: AdminContextValue['setEmployeeActive'] = (employeeId, active) => {
+      setEmployees((prev) =>
+        prev.map((employee) => (employee.id === employeeId ? { ...employee, active } : employee)),
+      );
     };
 
     // Сотрудник заказчика не привязан к объекту/службе и не создаёт заявки —
@@ -148,18 +173,21 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       managers,
       addManager,
       updateManager,
+      setManagerActive,
       canDeleteManager,
       deleteManager,
       isEmailTaken,
       customers,
       addCustomer,
       updateCustomer,
+      setCustomerActive,
       canDeleteCustomer,
       deleteCustomer,
       employees,
       getEmployeesByCustomer,
       addEmployee,
       updateEmployee,
+      setEmployeeActive,
       canDeleteEmployee,
       deleteEmployee,
     };

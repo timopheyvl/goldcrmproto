@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Modal } from '../../components/Modal';
 import { useAdmin } from './useAdmin';
+import { useObjects } from '../objects/useObjects';
+import { useRequests } from '../requests/useRequests';
 import type { Customer } from '../../data/org';
 import '../objects/objects.css';
 import './admin.css';
@@ -12,7 +14,9 @@ interface CustomerPanelProps {
 
 /** Карточка существующего заказчика — автосохранение по blur, без кнопки «Сохранить». */
 export function CustomerPanel({ customer, onDeleted }: CustomerPanelProps) {
-  const { updateCustomer, canDeleteCustomer, deleteCustomer } = useAdmin();
+  const { updateCustomer, setCustomerActive, canDeleteCustomer, deleteCustomer, employees } = useAdmin();
+  const { sites, departments, representatives } = useObjects();
+  const { requests } = useRequests();
 
   const [name, setName] = useState('');
   const [contactPerson, setContactPerson] = useState('');
@@ -36,6 +40,19 @@ export function CustomerPanel({ customer, onDeleted }: CustomerPanelProps) {
   }, [customer.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const guard = canDeleteCustomer(customer.id);
+
+  const customerSiteIds = new Set(sites.filter((site) => site.customerId === customer.id).map((site) => site.id));
+  const siteCount = customerSiteIds.size;
+  const customerDepartmentIds = new Set(
+    departments.filter((department) => customerSiteIds.has(department.siteId)).map((department) => department.id),
+  );
+  const representativeCount = representatives.filter((representative) =>
+    customerDepartmentIds.has(representative.departmentId),
+  ).length;
+  const employeeCount = employees.filter((employee) => employee.customerId === customer.id).length;
+  const activeRequestCount = requests.filter(
+    (request) => request.customerId === customer.id && request.status !== 'done',
+  ).length;
 
   const commitName = () => {
     const trimmed = name.trim();
@@ -62,6 +79,28 @@ export function CustomerPanel({ customer, onDeleted }: CustomerPanelProps) {
     <div className="admin-panel">
       <h2 className="admin-panel__title">{customer.name}</h2>
       <p className="admin-panel__subtitle">Заказчик</p>
+      <span className={customer.active ? 'admin-status-badge admin-status-badge--active' : 'admin-status-badge admin-status-badge--inactive'}>
+        {customer.active ? 'Активен' : 'Неактивен'}
+      </span>
+
+      <div className="admin-summary">
+        <div className="admin-summary__item">
+          <span className="admin-summary__value">{siteCount}</span>
+          <span className="admin-summary__label">Объектов</span>
+        </div>
+        <div className="admin-summary__item">
+          <span className="admin-summary__value">{representativeCount}</span>
+          <span className="admin-summary__label">Представителей</span>
+        </div>
+        <div className="admin-summary__item">
+          <span className="admin-summary__value">{employeeCount}</span>
+          <span className="admin-summary__label">Сотрудников</span>
+        </div>
+        <div className="admin-summary__item">
+          <span className="admin-summary__value">{activeRequestCount}</span>
+          <span className="admin-summary__label">Активных заявок</span>
+        </div>
+      </div>
 
       <label className="stage-field">
         <span className="stage-field__label">Название</span>
@@ -142,6 +181,9 @@ export function CustomerPanel({ customer, onDeleted }: CustomerPanelProps) {
       </label>
 
       <div className="stage-detail__actions">
+        <button type="button" className="btn btn--secondary" onClick={() => setCustomerActive(customer.id, !customer.active)}>
+          {customer.active ? 'Деактивировать' : 'Активировать'}
+        </button>
         <button
           type="button"
           className="btn btn--danger"

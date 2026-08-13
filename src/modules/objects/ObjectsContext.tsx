@@ -28,6 +28,8 @@ export interface ObjectsContextValue {
   /** Создание представителя — привязка к службе из контекста, после создания не меняется. */
   addRepresentative: (departmentId: string, input: RepresentativeInput) => string;
   updateRepresentative: (representativeId: string, patch: Partial<RepresentativeInput>) => void;
+  /** Мягкое отключение — не удаление; связи и история сохраняются. */
+  setRepresentativeActive: (representativeId: string, active: boolean) => void;
   canDeleteRepresentative: (representativeId: string) => DeleteGuardResult;
   deleteRepresentative: (representativeId: string) => void;
 

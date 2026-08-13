@@ -17,7 +17,7 @@ interface ManagerPanelProps {
  * и глобальную уникальность логина при потере фокуса.
  */
 export function ManagerPanel({ manager, onDeleted }: ManagerPanelProps) {
-  const { updateManager, canDeleteManager, deleteManager, isEmailTaken } = useAdmin();
+  const { updateManager, setManagerActive, canDeleteManager, deleteManager, isEmailTaken } = useAdmin();
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -81,6 +81,9 @@ export function ManagerPanel({ manager, onDeleted }: ManagerPanelProps) {
     <div className="admin-panel">
       <h2 className="admin-panel__title">{manager.fullName}</h2>
       <p className="admin-panel__subtitle">Менеджер GoldLink</p>
+      <span className={manager.active ? 'admin-status-badge admin-status-badge--active' : 'admin-status-badge admin-status-badge--inactive'}>
+        {manager.active ? 'Активен' : 'Неактивен'}
+      </span>
 
       <label className="stage-field">
         <span className="stage-field__label">ФИО</span>
@@ -132,6 +135,9 @@ export function ManagerPanel({ manager, onDeleted }: ManagerPanelProps) {
       </label>
 
       <div className="stage-detail__actions">
+        <button type="button" className="btn btn--secondary" onClick={() => setManagerActive(manager.id, !manager.active)}>
+          {manager.active ? 'Деактивировать' : 'Активировать'}
+        </button>
         <button
           type="button"
           className="btn btn--danger"
