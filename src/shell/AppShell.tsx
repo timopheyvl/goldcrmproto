@@ -4,11 +4,13 @@ import './AppShell.css';
 import { Sidebar } from './Sidebar';
 import { RoleSwitcher } from './RoleSwitcher';
 import { useRole } from '../context/useRole';
+import { useAuth } from '../context/useAuth';
 import { MODULES, DEFAULT_MODULE_PATH } from '../modules';
 import { ROLE_LABELS } from '../types';
 
 export function AppShell() {
   const { role } = useRole();
+  const { logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -25,6 +27,11 @@ export function AppShell() {
 
   const activeModule = MODULES.find(matchesModule);
 
+  const handleLogout = () => {
+    logout();
+    navigate('/login', { replace: true });
+  };
+
   return (
     <div className="app-shell">
       <Sidebar />
@@ -34,6 +41,9 @@ export function AppShell() {
           <div className="app-shell__topbar-right">
             <span className="app-shell__role-badge">{ROLE_LABELS[role]}</span>
             <RoleSwitcher />
+            <button type="button" className="btn btn--ghost btn--sm" onClick={handleLogout}>
+              Выйти
+            </button>
           </div>
         </header>
         <main className="app-shell__content">

@@ -1,6 +1,11 @@
+import type { ReactElement } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { RoleProvider } from './context/RoleProvider';
+import { AuthProvider } from './context/AuthProvider';
+import { useAuth } from './context/useAuth';
 import { AppShell } from './shell/AppShell';
+import { LoginPage } from './modules/auth/LoginPage';
+import { ForgotPasswordPage } from './modules/auth/ForgotPasswordPage';
 import { PlaceholderPage } from './modules/PlaceholderPage';
 import { CatalogPage } from './modules/catalog/CatalogPage';
 import { ProductPage } from './modules/catalog/ProductPage';
@@ -23,57 +28,91 @@ import { ArticlePage } from './modules/training/ArticlePage';
 import { ArticleEditorPage } from './modules/training/ArticleEditorPage';
 import { MODULES, DEFAULT_MODULE_PATH } from './modules';
 
+function RequireAuth({ children }: { children: ReactElement }) {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
+}
+
+function PublicOnly({ children }: { children: ReactElement }) {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? <Navigate to={DEFAULT_MODULE_PATH} replace /> : children;
+}
+
 export function App() {
   return (
-    <RoleProvider>
-      <VendorProvider>
-        <RequestsProvider>
-          <ObjectsProvider>
-            <AdminProvider>
-              <TrainingProvider>
-                <CartProvider>
-                  <BrowserRouter>
-                    <Routes>
-                      <Route element={<AppShell />}>
-                        <Route index element={<Navigate to={DEFAULT_MODULE_PATH} replace />} />
-                        {MODULES.map((module) =>
-                          module.key === 'catalog' ? (
-                            <Route key={module.key} path={module.path} element={<CatalogPage />} />
-                          ) : module.key === 'requests' ? (
-                            <Route key={module.key} path={module.path} element={<RequestsPage />} />
-                          ) : module.key === 'objects' ? (
-                            <Route key={module.key} path={module.path} element={<ObjectsPage />} />
-                          ) : module.key === 'training' ? (
-                            <Route key={module.key} path={module.path} element={<TrainingPage />} />
-                          ) : module.key === 'admin' ? (
-                            <Route key={module.key} path={module.path} element={<AdminPage />} />
-                          ) : (
-                            <Route
-                              key={module.key}
-                              path={module.path}
-                              element={<PlaceholderPage module={module} />}
-                            />
-                          ),
-                        )}
-                        <Route path="/catalog/import" element={<ImportPage />} />
-                        <Route path="/catalog/vendors" element={<VendorsPage />} />
-                        <Route path="/catalog/:id" element={<ProductPage />} />
-                        <Route path="/requests/:id" element={<RequestDetailPage />} />
-                        <Route path="/orders/:id/edit" element={<OrderEditPage />} />
-                        <Route path="/objects/:id" element={<ObjectDetailPage />} />
-                        <Route path="/training/new" element={<ArticleEditorPage />} />
-                        <Route path="/training/:id/edit" element={<ArticleEditorPage />} />
-                        <Route path="/training/:id" element={<ArticlePage />} />
-                        <Route path="*" element={<Navigate to={DEFAULT_MODULE_PATH} replace />} />
-                      </Route>
-                    </Routes>
-                  </BrowserRouter>
-                </CartProvider>
-              </TrainingProvider>
-            </AdminProvider>
-          </ObjectsProvider>
-        </RequestsProvider>
-      </VendorProvider>
-    </RoleProvider>
+    <AuthProvider>
+      <RoleProvider>
+        <VendorProvider>
+          <RequestsProvider>
+            <ObjectsProvider>
+              <AdminProvider>
+                <TrainingProvider>
+                  <CartProvider>
+                    <BrowserRouter>
+                      <Routes>
+                        <Route
+                          path="/login"
+                          element={
+                            <PublicOnly>
+                              <LoginPage />
+                            </PublicOnly>
+                          }
+                        />
+                        <Route
+                          path="/forgot-password"
+                          element={
+                            <PublicOnly>
+                              <ForgotPasswordPage />
+                            </PublicOnly>
+                          }
+                        />
+                        <Route
+                          element={
+                            <RequireAuth>
+                              <AppShell />
+                            </RequireAuth>
+                          }
+                        >
+                          <Route index element={<Navigate to={DEFAULT_MODULE_PATH} replace />} />
+                          {MODULES.map((module) =>
+                            module.key === 'catalog' ? (
+                              <Route key={module.key} path={module.path} element={<CatalogPage />} />
+                            ) : module.key === 'requests' ? (
+                              <Route key={module.key} path={module.path} element={<RequestsPage />} />
+                            ) : module.key === 'objects' ? (
+                              <Route key={module.key} path={module.path} element={<ObjectsPage />} />
+                            ) : module.key === 'training' ? (
+                              <Route key={module.key} path={module.path} element={<TrainingPage />} />
+                            ) : module.key === 'admin' ? (
+                              <Route key={module.key} path={module.path} element={<AdminPage />} />
+                            ) : (
+                              <Route
+                                key={module.key}
+                                path={module.path}
+                                element={<PlaceholderPage module={module} />}
+                              />
+                            ),
+                          )}
+                          <Route path="/catalog/import" element={<ImportPage />} />
+                          <Route path="/catalog/vendors" element={<VendorsPage />} />
+                          <Route path="/catalog/:id" element={<ProductPage />} />
+                          <Route path="/requests/:id" element={<RequestDetailPage />} />
+                          <Route path="/orders/:id/edit" element={<OrderEditPage />} />
+                          <Route path="/objects/:id" element={<ObjectDetailPage />} />
+                          <Route path="/training/new" element={<ArticleEditorPage />} />
+                          <Route path="/training/:id/edit" element={<ArticleEditorPage />} />
+                          <Route path="/training/:id" element={<ArticlePage />} />
+                          <Route path="*" element={<Navigate to={DEFAULT_MODULE_PATH} replace />} />
+                        </Route>
+                      </Routes>
+                    </BrowserRouter>
+                  </CartProvider>
+                </TrainingProvider>
+              </AdminProvider>
+            </ObjectsProvider>
+          </RequestsProvider>
+        </VendorProvider>
+      </RoleProvider>
+    </AuthProvider>
   );
 }
