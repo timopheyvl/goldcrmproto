@@ -11,6 +11,7 @@ import { CatalogPage } from './modules/catalog/CatalogPage';
 import { ProductPage } from './modules/catalog/ProductPage';
 import { ImportPage } from './modules/catalog/ImportPage';
 import { VendorsPage } from './modules/catalog/VendorsPage';
+import { StatsPage } from './modules/catalog/StatsPage';
 import { CartProvider } from './modules/catalog/CartProvider';
 import { VendorProvider } from './modules/catalog/VendorProvider';
 import { RequestsProvider } from './modules/requests/RequestsProvider';
@@ -95,6 +96,7 @@ export function App() {
                           )}
                           <Route path="/catalog/import" element={<ImportPage />} />
                           <Route path="/catalog/vendors" element={<VendorsPage />} />
+                          <Route path="/catalog/stats" element={<StatsPage />} />
                           <Route path="/catalog/:id" element={<ProductPage />} />
                           <Route path="/requests/:id" element={<RequestDetailPage />} />
                           <Route path="/orders/:id/edit" element={<OrderEditPage />} />

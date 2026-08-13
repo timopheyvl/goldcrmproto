@@ -134,6 +134,9 @@ export function CatalogPage({ mode = 'shop', editActions }: CatalogPageProps = {
                 <Link to="/catalog/vendors" className="btn btn--secondary">
                   Вендоры
                 </Link>
+                <Link to="/catalog/stats" className="btn btn--secondary">
+                  Статистика
+                </Link>
                 <Link to="/catalog/import" className="btn btn--secondary">
                   Импорт
                 </Link>
