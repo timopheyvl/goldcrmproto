@@ -1,0 +1,902 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GoldLink — визуальная галерея прототипа</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: #f4f5f7; color: #1b1f26; }
+  header { position: sticky; top: 0; z-index: 10; background: #14161c; color: #fff; padding: 20px 32px; }
+  header h1 { margin: 0 0 4px; font-size: 20px; }
+  header .meta { font-size: 13px; color: #b7bcc7; }
+  .toc { background: #1c1f27; padding: 14px 32px 20px; border-bottom: 1px solid #2a2e38; }
+  .toc__role { margin-top: 10px; }
+  .toc__role-link { color: #ffd166; font-weight: 600; text-decoration: none; font-size: 15px; }
+  .toc__role-link:hover { text-decoration: underline; }
+  .toc__modules { margin-top: 4px; font-size: 13px; color: #9aa0ad; }
+  .toc__modules a { color: #9aa0ad; text-decoration: none; }
+  .toc__modules a:hover { color: #fff; text-decoration: underline; }
+  main { padding: 8px 32px 64px; max-width: 1600px; margin: 0 auto; }
+  section.role { margin-top: 48px; padding-top: 12px; border-top: 3px solid #14161c; }
+  section.role > h2 { font-size: 26px; margin: 12px 0 4px; }
+  section.module { margin-top: 28px; }
+  section.module h3 { font-size: 17px; margin: 0 0 12px; color: #33394a; }
+  section.module h3 .count { font-weight: 400; color: #8a8f9c; font-size: 13px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
+  .card { background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.12); display: flex; flex-direction: column; }
+  .card img { width: 100%; display: block; aspect-ratio: 16/10; object-fit: cover; object-position: top; background: #eee; }
+  .card figcaption { padding: 10px 12px 12px; }
+  .card__caption { font-size: 13.5px; font-weight: 600; line-height: 1.35; }
+  .card__state { font-size: 11.5px; color: #8a8f9c; margin-top: 4px; font-family: ui-monospace, Consolas, monospace; }
+  .card--missing { background: #fff8f0; border: 1px dashed #e0a340; }
+  .card__placeholder { aspect-ratio: 16/10; display: flex; align-items: center; justify-content: center; color: #b5762a; font-size: 13px; text-align: center; padding: 12px; background: repeating-linear-gradient(45deg, #fdf1de, #fdf1de 10px, #fbe8c8 10px, #fbe8c8 20px); }
+  .card__note { font-size: 11.5px; color: #b5762a; margin-top: 6px; }
+  a { color: inherit; }
+  .top-link { position: fixed; right: 24px; bottom: 24px; background: #14161c; color: #fff; padding: 10px 16px; border-radius: 999px; text-decoration: none; font-size: 13px; box-shadow: 0 4px 12px rgba(0,0,0,.25); }
+  .card .js-thumb { cursor: zoom-in; }
+
+  /* Лайтбокс */
+  .lightbox { position: fixed; inset: 0; z-index: 100; background: rgba(10,11,15,.92); display: flex; align-items: center; justify-content: center; padding: 56px 88px; }
+  .lightbox[hidden] { display: none; }
+  .lightbox__figure { display: flex; flex-direction: column; align-items: center; max-width: 100%; max-height: 100%; }
+  .lightbox__img-wrap { flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; }
+  .lightbox__img { max-width: min(1400px, 88vw); max-height: 74vh; object-fit: contain; border-radius: 6px; box-shadow: 0 12px 48px rgba(0,0,0,.5); background: #fff; }
+  .lightbox__caption { margin-top: 16px; text-align: center; color: #fff; max-width: 800px; }
+  .lightbox__breadcrumb { font-size: 12.5px; color: #ffd166; text-transform: uppercase; letter-spacing: .03em; margin-bottom: 6px; }
+  .lightbox__text { font-size: 15px; font-weight: 600; line-height: 1.4; }
+  .lightbox__state { margin-top: 6px; font-size: 12px; color: #9aa0ad; font-family: ui-monospace, Consolas, monospace; }
+  .lightbox__counter { margin-top: 10px; font-size: 12.5px; color: #6f7684; }
+  .lightbox__close { position: absolute; top: 20px; right: 28px; background: transparent; border: none; color: #fff; font-size: 34px; line-height: 1; cursor: pointer; padding: 6px 10px; border-radius: 8px; }
+  .lightbox__close:hover { background: rgba(255,255,255,.12); }
+  .lightbox__nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,.08); border: none; color: #fff; font-size: 28px; line-height: 1; width: 56px; height: 56px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .lightbox__nav:hover { background: rgba(255,255,255,.2); }
+  .lightbox__nav:disabled { opacity: .25; cursor: default; }
+  .lightbox__nav--prev { left: 18px; }
+  .lightbox__nav--next { right: 18px; }
+  @media (max-width: 760px) {
+    .lightbox { padding: 90px 12px 24px; }
+    .lightbox__nav { width: 44px; height: 44px; font-size: 22px; }
+    .lightbox__nav--prev { left: 4px; }
+    .lightbox__nav--next { right: 4px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>GoldLink — визуальная галерея прототипа</h1>
+  <div class="meta">Скриншотов: 81 · Пропущено (сложно достижимо): 0 · Собрано автоматически: screenshots/capture.js</div>
+</header>
+<nav class="toc" id="top">
+  
+    <div class="toc__role">
+      <a href="#role-common" class="toc__role-link">Общее (до входа)</a>
+      <div class="toc__modules"><a href="#common-auth">Вход</a></div>
+    </div>
+
+    <div class="toc__role">
+      <a href="#role-employee" class="toc__role-link">Сотрудник заказчика</a>
+      <div class="toc__modules"><a href="#employee-catalog">Каталог</a> · <a href="#employee-training">Обучающие материалы</a></div>
+    </div>
+
+    <div class="toc__role">
+      <a href="#role-representative" class="toc__role-link">Представитель заказчика</a>
+      <div class="toc__modules"><a href="#representative-catalog">Каталог</a> · <a href="#representative-requests">Заявки</a> · <a href="#representative-objects">Объекты</a> · <a href="#representative-training">Обучающие материалы</a></div>
+    </div>
+
+    <div class="toc__role">
+      <a href="#role-manager" class="toc__role-link">Менеджер GoldLink</a>
+      <div class="toc__modules"><a href="#manager-catalog">Каталог</a> · <a href="#manager-requests">Заявки</a> · <a href="#manager-objects">Объекты</a> · <a href="#manager-training">Обучающие материалы</a> · <a href="#manager-admin">Управление</a></div>
+    </div>
+</nav>
+<main>
+  
+  <section class="role" id="role-common">
+    <h2>Общее (до входа)</h2>
+    
+    <section class="module" id="common-auth">
+      <h3>Вход <span class="count">3</span></h3>
+      <div class="grid">
+        <figure class="card">
+          <a href="common/common_auth_login_default.png" class="js-thumb" data-idx="0" target="_blank" rel="noopener"><img src="common/common_auth_login_default.png" loading="lazy" alt="Экран входа в систему" /></a>
+          <figcaption>
+            <div class="card__caption">Экран входа в систему</div>
+            <div class="card__state">login / default</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="common/common_auth_forgot-password_form.png" class="js-thumb" data-idx="1" target="_blank" rel="noopener"><img src="common/common_auth_forgot-password_form.png" loading="lazy" alt="Восстановление пароля — форма запроса" /></a>
+          <figcaption>
+            <div class="card__caption">Восстановление пароля — форма запроса</div>
+            <div class="card__state">forgot-password / form</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="common/common_auth_forgot-password_sent.png" class="js-thumb" data-idx="2" target="_blank" rel="noopener"><img src="common/common_auth_forgot-password_sent.png" loading="lazy" alt="Восстановление пароля — ссылка отправлена" /></a>
+          <figcaption>
+            <div class="card__caption">Восстановление пароля — ссылка отправлена</div>
+            <div class="card__state">forgot-password / sent</div>
+          </figcaption>
+        </figure></div>
+    </section>
+  </section>
+
+  <section class="role" id="role-employee">
+    <h2>Сотрудник заказчика</h2>
+    
+    <section class="module" id="employee-catalog">
+      <h3>Каталог <span class="count">6</span></h3>
+      <div class="grid">
+        <figure class="card">
+          <a href="employee/employee_catalog_list_loading.png" class="js-thumb" data-idx="3" target="_blank" rel="noopener"><img src="employee/employee_catalog_list_loading.png" loading="lazy" alt="Каталог — список товаров, состояние загрузки (скелетоны)" /></a>
+          <figcaption>
+            <div class="card__caption">Каталог — список товаров, состояние загрузки (скелетоны)</div>
+            <div class="card__state">list / loading</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="employee/employee_catalog_list_default.png" class="js-thumb" data-idx="4" target="_blank" rel="noopener"><img src="employee/employee_catalog_list_default.png" loading="lazy" alt="Каталог — список товаров, сетка. Сотруднику доступен только просмотр: нет кнопки «Корзина» и колонки «Вендор»" /></a>
+          <figcaption>
+            <div class="card__caption">Каталог — список товаров, сетка. Сотруднику доступен только просмотр: нет кнопки «Корзина» и колонки «Вендор»</div>
+            <div class="card__state">list / default</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="employee/employee_catalog_list_list-view.png" class="js-thumb" data-idx="5" target="_blank" rel="noopener"><img src="employee/employee_catalog_list_list-view.png" loading="lazy" alt="Каталог — переключение на табличный (списочный) вид" /></a>
+          <figcaption>
+            <div class="card__caption">Каталог — переключение на табличный (списочный) вид</div>
+            <div class="card__state">list / list-view</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="employee/employee_catalog_list_category-filter.png" class="js-thumb" data-idx="6" target="_blank" rel="noopener"><img src="employee/employee_catalog_list_category-filter.png" loading="lazy" alt="Каталог — фильтрация по категории через дерево категорий" /></a>
+          <figcaption>
+            <div class="card__caption">Каталог — фильтрация по категории через дерево категорий</div>
+            <div class="card__state">list / category-filter</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="employee/employee_catalog_list_search-empty.png" class="js-thumb" data-idx="7" target="_blank" rel="noopener"><img src="employee/employee_catalog_list_search-empty.png" loading="lazy" alt="Каталог — поиск без результатов (пустое состояние)" /></a>
+          <figcaption>
+            <div class="card__caption">Каталог — поиск без результатов (пустое состояние)</div>
+            <div class="card__state">list / search-empty</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="employee/employee_catalog_product_detail.png" class="js-thumb" data-idx="8" target="_blank" rel="noopener"><img src="employee/employee_catalog_product_detail.png" loading="lazy" alt="Карточка товара — сотруднику недоступны кнопка «Добавить в корзину» и поле «Вендор»" /></a>
+          <figcaption>
+            <div class="card__caption">Карточка товара — сотруднику недоступны кнопка «Добавить в корзину» и поле «Вендор»</div>
+            <div class="card__state">product / detail</div>
+          </figcaption>
+        </figure></div>
+    </section>
+
+    <section class="module" id="employee-training">
+      <h3>Обучающие материалы <span class="count">4</span></h3>
+      <div class="grid">
+        <figure class="card">
+          <a href="employee/employee_training_list_default.png" class="js-thumb" data-idx="9" target="_blank" rel="noopener"><img src="employee/employee_training_list_default.png" loading="lazy" alt="Обучающие материалы — список статей (без кнопки «Новая статья»)" /></a>
+          <figcaption>
+            <div class="card__caption">Обучающие материалы — список статей (без кнопки «Новая статья»)</div>
+            <div class="card__state">list / default</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="employee/employee_training_list_search.png" class="js-thumb" data-idx="10" target="_blank" rel="noopener"><img src="employee/employee_training_list_search.png" loading="lazy" alt="Обучающие материалы — поиск по названию/тексту статьи" /></a>
+          <figcaption>
+            <div class="card__caption">Обучающие материалы — поиск по названию/тексту статьи</div>
+            <div class="card__state">list / search</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="employee/employee_training_article_rich-blocks.png" class="js-thumb" data-idx="11" target="_blank" rel="noopener"><img src="employee/employee_training_article_rich-blocks.png" loading="lazy" alt="Статья — блоки: текст, заголовок, список, изображение, цитата, файл. Внизу автофутер «Другие материалы»" /></a>
+          <figcaption>
+            <div class="card__caption">Статья — блоки: текст, заголовок, список, изображение, цитата, файл. Внизу автофутер «Другие материалы»</div>
+            <div class="card__state">article / rich-blocks</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="employee/employee_training_article_video-gallery.png" class="js-thumb" data-idx="12" target="_blank" rel="noopener"><img src="employee/employee_training_article_video-gallery.png" loading="lazy" alt="Статья — галерея изображений (карусель) и встроенное видео Rutube" /></a>
+          <figcaption>
+            <div class="card__caption">Статья — галерея изображений (карусель) и встроенное видео Rutube</div>
+            <div class="card__state">article / video-gallery</div>
+          </figcaption>
+        </figure></div>
+    </section>
+  </section>
+
+  <section class="role" id="role-representative">
+    <h2>Представитель заказчика</h2>
+    
+    <section class="module" id="representative-catalog">
+      <h3>Каталог <span class="count">5</span></h3>
+      <div class="grid">
+        <figure class="card">
+          <a href="representative/representative_catalog_list_default.png" class="js-thumb" data-idx="13" target="_blank" rel="noopener"><img src="representative/representative_catalog_list_default.png" loading="lazy" alt="Каталог — представителю доступна кнопка «Корзина» (без колонки «Вендор»)" /></a>
+          <figcaption>
+            <div class="card__caption">Каталог — представителю доступна кнопка «Корзина» (без колонки «Вендор»)</div>
+            <div class="card__state">list / default</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="representative/representative_catalog_product_detail.png" class="js-thumb" data-idx="14" target="_blank" rel="noopener"><img src="representative/representative_catalog_product_detail.png" loading="lazy" alt="Карточка товара — доступна кнопка «Добавить в корзину», поле «Вендор» скрыто" /></a>
+          <figcaption>
+            <div class="card__caption">Карточка товара — доступна кнопка «Добавить в корзину», поле «Вендор» скрыто</div>
+            <div class="card__state">product / detail</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="representative/representative_catalog_cart_empty.png" class="js-thumb" data-idx="15" target="_blank" rel="noopener"><img src="representative/representative_catalog_cart_empty.png" loading="lazy" alt="Корзина — пустое состояние" /></a>
+          <figcaption>
+            <div class="card__caption">Корзина — пустое состояние</div>
+            <div class="card__state">cart / empty</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="representative/representative_catalog_cart_filled.png" class="js-thumb" data-idx="16" target="_blank" rel="noopener"><img src="representative/representative_catalog_cart_filled.png" loading="lazy" alt="Корзина с позициями — количество, удаление, переход к «Сформировать заявку»" /></a>
+          <figcaption>
+            <div class="card__caption">Корзина с позициями — количество, удаление, переход к «Сформировать заявку»</div>
+            <div class="card__state">cart / filled</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="representative/representative_catalog_cart_success.png" class="js-thumb" data-idx="17" target="_blank" rel="noopener"><img src="representative/representative_catalog_cart_success.png" loading="lazy" alt="Заявка сформирована — номер GL-YYYY-NNNN, скачивание первичной спецификации .xlsx" /></a>
+          <figcaption>
+            <div class="card__caption">Заявка сформирована — номер GL-YYYY-NNNN, скачивание первичной спецификации .xlsx</div>
+            <div class="card__state">cart / success</div>
+          </figcaption>
+        </figure></div>
+    </section>
+
+    <section class="module" id="representative-requests">
+      <h3>Заявки <span class="count">7</span></h3>
+      <div class="grid">
+        <figure class="card">
+          <a href="representative/representative_requests_list_default.png" class="js-thumb" data-idx="18" target="_blank" rel="noopener"><img src="representative/representative_requests_list_default.png" loading="lazy" alt="Заявки — список в рамках своей службы/объекта (без фильтров по заказчику/объекту — доступны только менеджеру)" /></a>
+          <figcaption>
+            <div class="card__caption">Заявки — список в рамках своей службы/объекта (без фильтров по заказчику/объекту — доступны только менеджеру)</div>
+            <div class="card__state">list / default</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="representative/representative_requests_list_status-filter.png" class="js-thumb" data-idx="19" target="_blank" rel="noopener"><img src="representative/representative_requests_list_status-filter.png" loading="lazy" alt="Заявки — фильтр по статусу (сегментированные пилюли)" /></a>
+          <figcaption>
+            <div class="card__caption">Заявки — фильтр по статусу (сегментированные пилюли)</div>
+            <div class="card__state">list / status-filter</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="representative/representative_requests_detail_formed.png" class="js-thumb" data-idx="20" target="_blank" rel="noopener"><img src="representative/representative_requests_detail_formed.png" loading="lazy" alt="Карточка заявки в статусе «Сформирована» — доступно редактирование состава" /></a>
+          <figcaption>
+            <div class="card__caption">Карточка заявки в статусе «Сформирована» — доступно редактирование состава</div>
+            <div class="card__state">detail / formed</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="representative/representative_requests_detail_history-modal.png" class="js-thumb" data-idx="21" target="_blank" rel="noopener"><img src="representative/representative_requests_detail_history-modal.png" loading="lazy" alt="История изменений заявки — версии слева, diff состава справа (добавлено/удалено/изменено количество)" /></a>
+          <figcaption>
+            <div class="card__caption">История изменений заявки — версии слева, diff состава справа (добавлено/удалено/изменено количество)</div>
+            <div class="card__state">detail / history-modal</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="representative/representative_requests_detail_in-progress-with-docs.png" class="js-thumb" data-idx="22" target="_blank" rel="noopener"><img src="representative/representative_requests_detail_in-progress-with-docs.png" loading="lazy" alt="Заявка в статусе «В работе» с прикреплённым документом (скачивание доступно, прикрепление — только у менеджера)" /></a>
+          <figcaption>
+            <div class="card__caption">Заявка в статусе «В работе» с прикреплённым документом (скачивание доступно, прикрепление — только у менеджера)</div>
+            <div class="card__state">detail / in-progress-with-docs</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="representative/representative_requests_detail_done-locked.png" class="js-thumb" data-idx="23" target="_blank" rel="noopener"><img src="representative/representative_requests_detail_done-locked.png" loading="lazy" alt="Заявка в статусе «Исполнена» — редактирование состава заблокировано, кнопки «Редактировать» нет" /></a>
+          <figcaption>
+            <div class="card__caption">Заявка в статусе «Исполнена» — редактирование состава заблокировано, кнопки «Редактировать» нет</div>
+            <div class="card__state">detail / done-locked</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="representative/representative_requests_edit_composition.png" class="js-thumb" data-idx="24" target="_blank" rel="noopener"><img src="representative/representative_requests_edit_composition.png" loading="lazy" alt="Редактирование состава заявки — каталог+корзина, предзаполненные текущим составом; «Сохранить»/«Отмена» продублированы в футере корзины" /></a>
+          <figcaption>
+            <div class="card__caption">Редактирование состава заявки — каталог+корзина, предзаполненные текущим составом; «Сохранить»/«Отмена» продублированы в футере корзины</div>
+            <div class="card__state">edit / composition</div>
+          </figcaption>
+        </figure></div>
+    </section>
+
+    <section class="module" id="representative-objects">
+      <h3>Объекты <span class="count">6</span></h3>
+      <div class="grid">
+        <figure class="card">
+          <a href="representative/representative_objects_list_default.png" class="js-thumb" data-idx="25" target="_blank" rel="noopener"><img src="representative/representative_objects_list_default.png" loading="lazy" alt="Объекты — представитель видит только свой объект (скоуп по службе из профиля)" /></a>
+          <figcaption>
+            <div class="card__caption">Объекты — представитель видит только свой объект (скоуп по службе из профиля)</div>
+            <div class="card__state">list / default</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="representative/representative_objects_detail_materials.png" class="js-thumb" data-idx="26" target="_blank" rel="noopener"><img src="representative/representative_objects_detail_materials.png" loading="lazy" alt="Карточка объекта, вкладка «Материалы» — просмотр и скачивание, без кнопок добавления/удаления" /></a>
+          <figcaption>
+            <div class="card__caption">Карточка объекта, вкладка «Материалы» — просмотр и скачивание, без кнопок добавления/удаления</div>
+            <div class="card__state">detail / materials</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="representative/representative_objects_detail_departments.png" class="js-thumb" data-idx="27" target="_blank" rel="noopener"><img src="representative/representative_objects_detail_departments.png" loading="lazy" alt="Карточка объекта, вкладка «Службы» — только просмотр (создание/редактирование — в «Управлении»)" /></a>
+          <figcaption>
+            <div class="card__caption">Карточка объекта, вкладка «Службы» — только просмотр (создание/редактирование — в «Управлении»)</div>
+            <div class="card__state">detail / departments</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="representative/representative_objects_detail_plan-gantt.png" class="js-thumb" data-idx="28" target="_blank" rel="noopener"><img src="representative/representative_objects_detail_plan-gantt.png" loading="lazy" alt="План работ — диаграмма Ганта (верстанный мокап), без кнопки «Добавить этап»" /></a>
+          <figcaption>
+            <div class="card__caption">План работ — диаграмма Ганта (верстанный мокап), без кнопки «Добавить этап»</div>
+            <div class="card__state">detail / plan-gantt</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="representative/representative_objects_stage-panel_editable.png" class="js-thumb" data-idx="29" target="_blank" rel="noopener"><img src="representative/representative_objects_stage-panel_editable.png" loading="lazy" alt="Панель этапа — представитель правит описание/статус/%/ответственного; даты и удаление недоступны" /></a>
+          <figcaption>
+            <div class="card__caption">Панель этапа — представитель правит описание/статус/%/ответственного; даты и удаление недоступны</div>
+            <div class="card__state">stage-panel / editable</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="representative/representative_objects_stage-panel_locked-done.png" class="js-thumb" data-idx="30" target="_blank" rel="noopener"><img src="representative/representative_objects_stage-panel_locked-done.png" loading="lazy" alt="Панель этапа в статусе «Выполнен» — все поля только для просмотра" /></a>
+          <figcaption>
+            <div class="card__caption">Панель этапа в статусе «Выполнен» — все поля только для просмотра</div>
+            <div class="card__state">stage-panel / locked-done</div>
+          </figcaption>
+        </figure></div>
+    </section>
+
+    <section class="module" id="representative-training">
+      <h3>Обучающие материалы <span class="count">2</span></h3>
+      <div class="grid">
+        <figure class="card">
+          <a href="representative/representative_training_list_default.png" class="js-thumb" data-idx="31" target="_blank" rel="noopener"><img src="representative/representative_training_list_default.png" loading="lazy" alt="Обучающие материалы — список статей (без кнопки «Новая статья»)" /></a>
+          <figcaption>
+            <div class="card__caption">Обучающие материалы — список статей (без кнопки «Новая статья»)</div>
+            <div class="card__state">list / default</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="representative/representative_training_article_roles-overview.png" class="js-thumb" data-idx="32" target="_blank" rel="noopener"><img src="representative/representative_training_article_roles-overview.png" loading="lazy" alt="Статья — просмотр без кнопок «Редактировать»/«Удалить»" /></a>
+          <figcaption>
+            <div class="card__caption">Статья — просмотр без кнопок «Редактировать»/«Удалить»</div>
+            <div class="card__state">article / roles-overview</div>
+          </figcaption>
+        </figure></div>
+    </section>
+  </section>
+
+  <section class="role" id="role-manager">
+    <h2>Менеджер GoldLink</h2>
+    
+    <section class="module" id="manager-catalog">
+      <h3>Каталог <span class="count">11</span></h3>
+      <div class="grid">
+        <figure class="card">
+          <a href="manager/manager_catalog_list_default.png" class="js-thumb" data-idx="33" target="_blank" rel="noopener"><img src="manager/manager_catalog_list_default.png" loading="lazy" alt="Каталог — менеджеру видна колонка «Вендор» и кнопки «Вендоры»/«Статистика»/«Импорт», но нет корзины (заявки формирует только представитель)" /></a>
+          <figcaption>
+            <div class="card__caption">Каталог — менеджеру видна колонка «Вендор» и кнопки «Вендоры»/«Статистика»/«Импорт», но нет корзины (заявки формирует только представитель)</div>
+            <div class="card__state">list / default</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_catalog_product_detail.png" class="js-thumb" data-idx="34" target="_blank" rel="noopener"><img src="manager/manager_catalog_product_detail.png" loading="lazy" alt="Карточка товара — менеджеру видно поле «Вендор», кнопки заказа нет" /></a>
+          <figcaption>
+            <div class="card__caption">Карточка товара — менеджеру видно поле «Вендор», кнопки заказа нет</div>
+            <div class="card__state">product / detail</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_catalog_vendors_list.png" class="js-thumb" data-idx="35" target="_blank" rel="noopener"><img src="manager/manager_catalog_vendors_list.png" loading="lazy" alt="Управление вендорами — список (зона Каталога, доступно только менеджеру)" /></a>
+          <figcaption>
+            <div class="card__caption">Управление вендорами — список (зона Каталога, доступно только менеджеру)</div>
+            <div class="card__state">vendors / list</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_catalog_vendors_edit-modal.png" class="js-thumb" data-idx="36" target="_blank" rel="noopener"><img src="manager/manager_catalog_vendors_edit-modal.png" loading="lazy" alt="Редактирование вендора — модалка" /></a>
+          <figcaption>
+            <div class="card__caption">Редактирование вендора — модалка</div>
+            <div class="card__state">vendors / edit-modal</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_catalog_vendors_create-modal.png" class="js-thumb" data-idx="37" target="_blank" rel="noopener"><img src="manager/manager_catalog_vendors_create-modal.png" loading="lazy" alt="Новый вендор — модалка создания" /></a>
+          <figcaption>
+            <div class="card__caption">Новый вендор — модалка создания</div>
+            <div class="card__state">vendors / create-modal</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_catalog_stats_default.png" class="js-thumb" data-idx="38" target="_blank" rel="noopener"><img src="manager/manager_catalog_stats_default.png" loading="lazy" alt="Техническая статистика каталога — товары по вендорам и категориям (доступно только менеджеру)" /></a>
+          <figcaption>
+            <div class="card__caption">Техническая статистика каталога — товары по вендорам и категориям (доступно только менеджеру)</div>
+            <div class="card__state">stats / default</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_catalog_import_idle.png" class="js-thumb" data-idx="39" target="_blank" rel="noopener"><img src="manager/manager_catalog_import_idle.png" loading="lazy" alt="Импорт каталога — выбор вендора и файла выгрузки" /></a>
+          <figcaption>
+            <div class="card__caption">Импорт каталога — выбор вендора и файла выгрузки</div>
+            <div class="card__state">import / idle</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_catalog_import_uploading.png" class="js-thumb" data-idx="40" target="_blank" rel="noopener"><img src="manager/manager_catalog_import_uploading.png" loading="lazy" alt="Импорт — состояние загрузки/проверки файла" /></a>
+          <figcaption>
+            <div class="card__caption">Импорт — состояние загрузки/проверки файла</div>
+            <div class="card__state">import / uploading</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_catalog_import_report.png" class="js-thumb" data-idx="41" target="_blank" rel="noopener"><img src="manager/manager_catalog_import_report.png" loading="lazy" alt="Импорт — отчёт построчной проверки (ОК/предупреждения/ошибки)" /></a>
+          <figcaption>
+            <div class="card__caption">Импорт — отчёт построчной проверки (ОК/предупреждения/ошибки)</div>
+            <div class="card__state">import / report</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_catalog_import_applied.png" class="js-thumb" data-idx="42" target="_blank" rel="noopener"><img src="manager/manager_catalog_import_applied.png" loading="lazy" alt="Импорт — применён, показан итог" /></a>
+          <figcaption>
+            <div class="card__caption">Импорт — применён, показан итог</div>
+            <div class="card__state">import / applied</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_catalog_import_history.png" class="js-thumb" data-idx="43" target="_blank" rel="noopener"><img src="manager/manager_catalog_import_history.png" loading="lazy" alt="Импорт — история прошлых загрузок" /></a>
+          <figcaption>
+            <div class="card__caption">Импорт — история прошлых загрузок</div>
+            <div class="card__state">import / history</div>
+          </figcaption>
+        </figure></div>
+    </section>
+
+    <section class="module" id="manager-requests">
+      <h3>Заявки <span class="count">5</span></h3>
+      <div class="grid">
+        <figure class="card">
+          <a href="manager/manager_requests_list_loading.png" class="js-thumb" data-idx="44" target="_blank" rel="noopener"><img src="manager/manager_requests_list_loading.png" loading="lazy" alt="Заявки — состояние загрузки (скелетоны таблицы)" /></a>
+          <figcaption>
+            <div class="card__caption">Заявки — состояние загрузки (скелетоны таблицы)</div>
+            <div class="card__state">list / loading</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_requests_list_default.png" class="js-thumb" data-idx="45" target="_blank" rel="noopener"><img src="manager/manager_requests_list_default.png" loading="lazy" alt="Заявки — менеджер видит все заявки всех заказчиков, с фильтрами по заказчику/объекту/службе" /></a>
+          <figcaption>
+            <div class="card__caption">Заявки — менеджер видит все заявки всех заказчиков, с фильтрами по заказчику/объекту/службе</div>
+            <div class="card__state">list / default</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_requests_list_filtered.png" class="js-thumb" data-idx="46" target="_blank" rel="noopener"><img src="manager/manager_requests_list_filtered.png" loading="lazy" alt="Заявки — комбинация фильтров: статус + заказчик" /></a>
+          <figcaption>
+            <div class="card__caption">Заявки — комбинация фильтров: статус + заказчик</div>
+            <div class="card__state">list / filtered</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_requests_detail_status-select.png" class="js-thumb" data-idx="47" target="_blank" rel="noopener"><img src="manager/manager_requests_detail_status-select.png" loading="lazy" alt="Карточка заявки — менеджеру доступна смена статуса (сегмент «Управление статусом»)" /></a>
+          <figcaption>
+            <div class="card__caption">Карточка заявки — менеджеру доступна смена статуса (сегмент «Управление статусом»)</div>
+            <div class="card__state">detail / status-select</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_requests_detail_document-upload.png" class="js-thumb" data-idx="48" target="_blank" rel="noopener"><img src="manager/manager_requests_detail_document-upload.png" loading="lazy" alt="Заявка «Исполнена» — менеджер всё ещё может прикреплять документы (кнопка «Прикрепить документ»)" /></a>
+          <figcaption>
+            <div class="card__caption">Заявка «Исполнена» — менеджер всё ещё может прикреплять документы (кнопка «Прикрепить документ»)</div>
+            <div class="card__state">detail / document-upload</div>
+          </figcaption>
+        </figure></div>
+    </section>
+
+    <section class="module" id="manager-objects">
+      <h3>Объекты <span class="count">9</span></h3>
+      <div class="grid">
+        <figure class="card">
+          <a href="manager/manager_objects_list_default.png" class="js-thumb" data-idx="49" target="_blank" rel="noopener"><img src="manager/manager_objects_list_default.png" loading="lazy" alt="Объекты — менеджеру видны объекты всех заказчиков, с фильтром по заказчику" /></a>
+          <figcaption>
+            <div class="card__caption">Объекты — менеджеру видны объекты всех заказчиков, с фильтром по заказчику</div>
+            <div class="card__state">list / default</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_objects_detail_materials-crud.png" class="js-thumb" data-idx="50" target="_blank" rel="noopener"><img src="manager/manager_objects_detail_materials-crud.png" loading="lazy" alt="Материалы объекта — менеджер: CRUD записей и загрузка файлов" /></a>
+          <figcaption>
+            <div class="card__caption">Материалы объекта — менеджер: CRUD записей и загрузка файлов</div>
+            <div class="card__state">detail / materials-crud</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_objects_materials_create-modal.png" class="js-thumb" data-idx="51" target="_blank" rel="noopener"><img src="manager/manager_objects_materials_create-modal.png" loading="lazy" alt="Новая запись материала — модалка с загрузкой файлов" /></a>
+          <figcaption>
+            <div class="card__caption">Новая запись материала — модалка с загрузкой файлов</div>
+            <div class="card__state">materials / create-modal</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_objects_materials_delete-confirm.png" class="js-thumb" data-idx="52" target="_blank" rel="noopener"><img src="manager/manager_objects_materials_delete-confirm.png" loading="lazy" alt="Удаление материала — подтверждение (деструктив всегда через модалку)" /></a>
+          <figcaption>
+            <div class="card__caption">Удаление материала — подтверждение (деструктив всегда через модалку)</div>
+            <div class="card__state">materials / delete-confirm</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_objects_detail_departments-view.png" class="js-thumb" data-idx="53" target="_blank" rel="noopener"><img src="manager/manager_objects_detail_departments-view.png" loading="lazy" alt="Службы объекта — просмотр (CRUD служб — только в «Управлении»)" /></a>
+          <figcaption>
+            <div class="card__caption">Службы объекта — просмотр (CRUD служб — только в «Управлении»)</div>
+            <div class="card__state">detail / departments-view</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_objects_detail_plan-gantt-full.png" class="js-thumb" data-idx="54" target="_blank" rel="noopener"><img src="manager/manager_objects_detail_plan-gantt-full.png" loading="lazy" alt="План работ — диаграмма Ганта, менеджеру доступна кнопка «Добавить этап»" /></a>
+          <figcaption>
+            <div class="card__caption">План работ — диаграмма Ганта, менеджеру доступна кнопка «Добавить этап»</div>
+            <div class="card__state">detail / plan-gantt-full</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_objects_plan_add-stage-modal.png" class="js-thumb" data-idx="55" target="_blank" rel="noopener"><img src="manager/manager_objects_plan_add-stage-modal.png" loading="lazy" alt="Новый этап плана работ — модалка создания (все поля сразу)" /></a>
+          <figcaption>
+            <div class="card__caption">Новый этап плана работ — модалка создания (все поля сразу)</div>
+            <div class="card__state">plan / add-stage-modal</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_objects_stage-panel_full-edit.png" class="js-thumb" data-idx="56" target="_blank" rel="noopener"><img src="manager/manager_objects_stage-panel_full-edit.png" loading="lazy" alt="Панель этапа — менеджеру доступны все поля: название, даты, зависимость от этапа, удаление" /></a>
+          <figcaption>
+            <div class="card__caption">Панель этапа — менеджеру доступны все поля: название, даты, зависимость от этапа, удаление</div>
+            <div class="card__state">stage-panel / full-edit</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_objects_stage-panel_delete-confirm.png" class="js-thumb" data-idx="57" target="_blank" rel="noopener"><img src="manager/manager_objects_stage-panel_delete-confirm.png" loading="lazy" alt="Удаление этапа — подтверждение" /></a>
+          <figcaption>
+            <div class="card__caption">Удаление этапа — подтверждение</div>
+            <div class="card__state">stage-panel / delete-confirm</div>
+          </figcaption>
+        </figure></div>
+    </section>
+
+    <section class="module" id="manager-training">
+      <h3>Обучающие материалы <span class="count">5</span></h3>
+      <div class="grid">
+        <figure class="card">
+          <a href="manager/manager_training_list_default.png" class="js-thumb" data-idx="58" target="_blank" rel="noopener"><img src="manager/manager_training_list_default.png" loading="lazy" alt="Обучающие материалы — менеджеру доступна кнопка «Новая статья»" /></a>
+          <figcaption>
+            <div class="card__caption">Обучающие материалы — менеджеру доступна кнопка «Новая статья»</div>
+            <div class="card__state">list / default</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_training_article_manager-view.png" class="js-thumb" data-idx="59" target="_blank" rel="noopener"><img src="manager/manager_training_article_manager-view.png" loading="lazy" alt="Статья — менеджеру доступны кнопки «Редактировать»/«Удалить»" /></a>
+          <figcaption>
+            <div class="card__caption">Статья — менеджеру доступны кнопки «Редактировать»/«Удалить»</div>
+            <div class="card__state">article / manager-view</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_training_article_delete-confirm.png" class="js-thumb" data-idx="60" target="_blank" rel="noopener"><img src="manager/manager_training_article_delete-confirm.png" loading="lazy" alt="Удаление статьи — подтверждение" /></a>
+          <figcaption>
+            <div class="card__caption">Удаление статьи — подтверждение</div>
+            <div class="card__state">article / delete-confirm</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_training_editor_edit-existing.png" class="js-thumb" data-idx="61" target="_blank" rel="noopener"><img src="manager/manager_training_editor_edit-existing.png" loading="lazy" alt="Редактирование статьи — блочный конструктор: каждый блок можно сдвинуть вверх/вниз или удалить" /></a>
+          <figcaption>
+            <div class="card__caption">Редактирование статьи — блочный конструктор: каждый блок можно сдвинуть вверх/вниз или удалить</div>
+            <div class="card__state">editor / edit-existing</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_training_editor_new-empty.png" class="js-thumb" data-idx="62" target="_blank" rel="noopener"><img src="manager/manager_training_editor_new-empty.png" loading="lazy" alt="Новая статья — пустой конструктор, выбор типа блока перед добавлением" /></a>
+          <figcaption>
+            <div class="card__caption">Новая статья — пустой конструктор, выбор типа блока перед добавлением</div>
+            <div class="card__state">editor / new-empty</div>
+          </figcaption>
+        </figure></div>
+    </section>
+
+    <section class="module" id="manager-admin">
+      <h3>Управление <span class="count">18</span></h3>
+      <div class="grid">
+        <figure class="card">
+          <a href="manager/manager_admin_tree_empty-selection.png" class="js-thumb" data-idx="63" target="_blank" rel="noopener"><img src="manager/manager_admin_tree_empty-selection.png" loading="lazy" alt="Управление — дерево «Заказчики» / «Сотрудники GoldLink», ничего не выбрано" /></a>
+          <figcaption>
+            <div class="card__caption">Управление — дерево «Заказчики» / «Сотрудники GoldLink», ничего не выбрано</div>
+            <div class="card__state">tree / empty-selection</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_admin_customers_root-panel.png" class="js-thumb" data-idx="64" target="_blank" rel="noopener"><img src="manager/manager_admin_customers_root-panel.png" loading="lazy" alt="Управление — корень «Заказчики», кнопка «+ Добавить заказчика»" /></a>
+          <figcaption>
+            <div class="card__caption">Управление — корень «Заказчики», кнопка «+ Добавить заказчика»</div>
+            <div class="card__state">customers / root-panel</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_admin_customer_create-form.png" class="js-thumb" data-idx="65" target="_blank" rel="noopener"><img src="manager/manager_admin_customer_create-form.png" loading="lazy" alt="Новый заказчик — форма создания" /></a>
+          <figcaption>
+            <div class="card__caption">Новый заказчик — форма создания</div>
+            <div class="card__state">customer / create-form</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_admin_customer_edit-panel.png" class="js-thumb" data-idx="66" target="_blank" rel="noopener"><img src="manager/manager_admin_customer_edit-panel.png" loading="lazy" alt="Карточка заказчика — инлайн-редактирование по blur, сводка связанных сущностей" /></a>
+          <figcaption>
+            <div class="card__caption">Карточка заказчика — инлайн-редактирование по blur, сводка связанных сущностей</div>
+            <div class="card__state">customer / edit-panel</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_admin_customer_delete-blocked.png" class="js-thumb" data-idx="67" target="_blank" rel="noopener"><img src="manager/manager_admin_customer_delete-blocked.png" loading="lazy" alt="Удаление заказчика заблокировано — есть связанные объекты/представители/сотрудники (каскадного удаления нет)" /></a>
+          <figcaption>
+            <div class="card__caption">Удаление заказчика заблокировано — есть связанные объекты/представители/сотрудники (каскадного удаления нет)</div>
+            <div class="card__state">customer / delete-blocked</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_admin_site_create-form.png" class="js-thumb" data-idx="68" target="_blank" rel="noopener"><img src="manager/manager_admin_site_create-form.png" loading="lazy" alt="Новый объект — создаётся уже привязанным к заказчику из контекста дерева" /></a>
+          <figcaption>
+            <div class="card__caption">Новый объект — создаётся уже привязанным к заказчику из контекста дерева</div>
+            <div class="card__state">site / create-form</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_admin_site_edit-panel.png" class="js-thumb" data-idx="69" target="_blank" rel="noopener"><img src="manager/manager_admin_site_edit-panel.png" loading="lazy" alt="Карточка объекта в «Управлении» — поля объекта (название/локация/геопозиция/дата начала), не сущностный контент" /></a>
+          <figcaption>
+            <div class="card__caption">Карточка объекта в «Управлении» — поля объекта (название/локация/геопозиция/дата начала), не сущностный контент</div>
+            <div class="card__state">site / edit-panel</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_admin_department_create-form.png" class="js-thumb" data-idx="70" target="_blank" rel="noopener"><img src="manager/manager_admin_department_create-form.png" loading="lazy" alt="Новая служба — только название, привязка к объекту/заказчику из контекста" /></a>
+          <figcaption>
+            <div class="card__caption">Новая служба — только название, привязка к объекту/заказчику из контекста</div>
+            <div class="card__state">department / create-form</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_admin_department_edit-panel.png" class="js-thumb" data-idx="71" target="_blank" rel="noopener"><img src="manager/manager_admin_department_edit-panel.png" loading="lazy" alt="Карточка службы — единственное редактируемое поле «Название»" /></a>
+          <figcaption>
+            <div class="card__caption">Карточка службы — единственное редактируемое поле «Название»</div>
+            <div class="card__state">department / edit-panel</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_admin_representative_create-form.png" class="js-thumb" data-idx="72" target="_blank" rel="noopener"><img src="manager/manager_admin_representative_create-form.png" loading="lazy" alt="Новый представитель — привязка к службе фиксирована из контекста, email = логин" /></a>
+          <figcaption>
+            <div class="card__caption">Новый представитель — привязка к службе фиксирована из контекста, email = логин</div>
+            <div class="card__state">representative / create-form</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_admin_representative_create-validation.png" class="js-thumb" data-idx="73" target="_blank" rel="noopener"><img src="manager/manager_admin_representative_create-validation.png" loading="lazy" alt="Валидация формы — email уже используется другим пользователем (глобальная уникальность логина); ФИО обязательно" /></a>
+          <figcaption>
+            <div class="card__caption">Валидация формы — email уже используется другим пользователем (глобальная уникальность логина); ФИО обязательно</div>
+            <div class="card__state">representative / create-validation</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_admin_representative_edit-panel.png" class="js-thumb" data-idx="74" target="_blank" rel="noopener"><img src="manager/manager_admin_representative_edit-panel.png" loading="lazy" alt="Карточка представителя — ФИО/email/телефон/должность, привязка к службе не меняется" /></a>
+          <figcaption>
+            <div class="card__caption">Карточка представителя — ФИО/email/телефон/должность, привязка к службе не меняется</div>
+            <div class="card__state">representative / edit-panel</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_admin_employees_root-panel.png" class="js-thumb" data-idx="75" target="_blank" rel="noopener"><img src="manager/manager_admin_employees_root-panel.png" loading="lazy" alt="Сотрудники заказчика — отдельный подузел вне каскада объект/служба" /></a>
+          <figcaption>
+            <div class="card__caption">Сотрудники заказчика — отдельный подузел вне каскада объект/служба</div>
+            <div class="card__state">employees / root-panel</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_admin_employee_create-form.png" class="js-thumb" data-idx="76" target="_blank" rel="noopener"><img src="manager/manager_admin_employee_create-form.png" loading="lazy" alt="Новый сотрудник заказчика — привязка только к заказчику, без объекта/службы" /></a>
+          <figcaption>
+            <div class="card__caption">Новый сотрудник заказчика — привязка только к заказчику, без объекта/службы</div>
+            <div class="card__state">employee / create-form</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_admin_employee_edit-panel.png" class="js-thumb" data-idx="77" target="_blank" rel="noopener"><img src="manager/manager_admin_employee_edit-panel.png" loading="lazy" alt="Карточка сотрудника заказчика" /></a>
+          <figcaption>
+            <div class="card__caption">Карточка сотрудника заказчика</div>
+            <div class="card__state">employee / edit-panel</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_admin_managers_tree-and-root.png" class="js-thumb" data-idx="78" target="_blank" rel="noopener"><img src="manager/manager_admin_managers_tree-and-root.png" loading="lazy" alt="Вкладка «Сотрудники GoldLink» — плоский список внутренних менеджеров" /></a>
+          <figcaption>
+            <div class="card__caption">Вкладка «Сотрудники GoldLink» — плоский список внутренних менеджеров</div>
+            <div class="card__state">managers / tree-and-root</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_admin_manager_create-form.png" class="js-thumb" data-idx="79" target="_blank" rel="noopener"><img src="manager/manager_admin_manager_create-form.png" loading="lazy" alt="Новый менеджер GoldLink — ФИО/email(логин)/телефон/должность" /></a>
+          <figcaption>
+            <div class="card__caption">Новый менеджер GoldLink — ФИО/email(логин)/телефон/должность</div>
+            <div class="card__state">manager / create-form</div>
+          </figcaption>
+        </figure>
+
+        <figure class="card">
+          <a href="manager/manager_admin_manager_edit-panel.png" class="js-thumb" data-idx="80" target="_blank" rel="noopener"><img src="manager/manager_admin_manager_edit-panel.png" loading="lazy" alt="Карточка менеджера GoldLink" /></a>
+          <figcaption>
+            <div class="card__caption">Карточка менеджера GoldLink</div>
+            <div class="card__state">manager / edit-panel</div>
+          </figcaption>
+        </figure></div>
+    </section>
+  </section>
+</main>
+<a class="top-link" href="#top">Наверх ↑</a>
+
+<div class="lightbox" id="lightbox" hidden>
+  <button type="button" class="lightbox__close" id="lightboxClose" aria-label="Закрыть">×</button>
+  <button type="button" class="lightbox__nav lightbox__nav--prev" id="lightboxPrev" aria-label="Предыдущая">‹</button>
+  <button type="button" class="lightbox__nav lightbox__nav--next" id="lightboxNext" aria-label="Следующая">›</button>
+  <figure class="lightbox__figure">
+    <div class="lightbox__img-wrap">
+      <img class="lightbox__img" id="lightboxImg" src="" alt="" />
+    </div>
+    <figcaption class="lightbox__caption">
+      <div class="lightbox__breadcrumb" id="lightboxBreadcrumb"></div>
+      <div class="lightbox__text" id="lightboxText"></div>
+      <div class="lightbox__state" id="lightboxState"></div>
+      <div class="lightbox__counter" id="lightboxCounter"></div>
+    </figcaption>
+  </figure>
+</div>
+
+<script>
+  var SHOTS = [{"file":"common/common_auth_login_default.png","caption":"Экран входа в систему","stateLabel":"login / default","roleLabel":"Общее (до входа)","moduleLabel":"Вход"},{"file":"common/common_auth_forgot-password_form.png","caption":"Восстановление пароля — форма запроса","stateLabel":"forgot-password / form","roleLabel":"Общее (до входа)","moduleLabel":"Вход"},{"file":"common/common_auth_forgot-password_sent.png","caption":"Восстановление пароля — ссылка отправлена","stateLabel":"forgot-password / sent","roleLabel":"Общее (до входа)","moduleLabel":"Вход"},{"file":"employee/employee_catalog_list_loading.png","caption":"Каталог — список товаров, состояние загрузки (скелетоны)","stateLabel":"list / loading","roleLabel":"Сотрудник заказчика","moduleLabel":"Каталог"},{"file":"employee/employee_catalog_list_default.png","caption":"Каталог — список товаров, сетка. Сотруднику доступен только просмотр: нет кнопки «Корзина» и колонки «Вендор»","stateLabel":"list / default","roleLabel":"Сотрудник заказчика","moduleLabel":"Каталог"},{"file":"employee/employee_catalog_list_list-view.png","caption":"Каталог — переключение на табличный (списочный) вид","stateLabel":"list / list-view","roleLabel":"Сотрудник заказчика","moduleLabel":"Каталог"},{"file":"employee/employee_catalog_list_category-filter.png","caption":"Каталог — фильтрация по категории через дерево категорий","stateLabel":"list / category-filter","roleLabel":"Сотрудник заказчика","moduleLabel":"Каталог"},{"file":"employee/employee_catalog_list_search-empty.png","caption":"Каталог — поиск без результатов (пустое состояние)","stateLabel":"list / search-empty","roleLabel":"Сотрудник заказчика","moduleLabel":"Каталог"},{"file":"employee/employee_catalog_product_detail.png","caption":"Карточка товара — сотруднику недоступны кнопка «Добавить в корзину» и поле «Вендор»","stateLabel":"product / detail","roleLabel":"Сотрудник заказчика","moduleLabel":"Каталог"},{"file":"employee/employee_training_list_default.png","caption":"Обучающие материалы — список статей (без кнопки «Новая статья»)","stateLabel":"list / default","roleLabel":"Сотрудник заказчика","moduleLabel":"Обучающие материалы"},{"file":"employee/employee_training_list_search.png","caption":"Обучающие материалы — поиск по названию/тексту статьи","stateLabel":"list / search","roleLabel":"Сотрудник заказчика","moduleLabel":"Обучающие материалы"},{"file":"employee/employee_training_article_rich-blocks.png","caption":"Статья — блоки: текст, заголовок, список, изображение, цитата, файл. Внизу автофутер «Другие материалы»","stateLabel":"article / rich-blocks","roleLabel":"Сотрудник заказчика","moduleLabel":"Обучающие материалы"},{"file":"employee/employee_training_article_video-gallery.png","caption":"Статья — галерея изображений (карусель) и встроенное видео Rutube","stateLabel":"article / video-gallery","roleLabel":"Сотрудник заказчика","moduleLabel":"Обучающие материалы"},{"file":"representative/representative_catalog_list_default.png","caption":"Каталог — представителю доступна кнопка «Корзина» (без колонки «Вендор»)","stateLabel":"list / default","roleLabel":"Представитель заказчика","moduleLabel":"Каталог"},{"file":"representative/representative_catalog_product_detail.png","caption":"Карточка товара — доступна кнопка «Добавить в корзину», поле «Вендор» скрыто","stateLabel":"product / detail","roleLabel":"Представитель заказчика","moduleLabel":"Каталог"},{"file":"representative/representative_catalog_cart_empty.png","caption":"Корзина — пустое состояние","stateLabel":"cart / empty","roleLabel":"Представитель заказчика","moduleLabel":"Каталог"},{"file":"representative/representative_catalog_cart_filled.png","caption":"Корзина с позициями — количество, удаление, переход к «Сформировать заявку»","stateLabel":"cart / filled","roleLabel":"Представитель заказчика","moduleLabel":"Каталог"},{"file":"representative/representative_catalog_cart_success.png","caption":"Заявка сформирована — номер GL-YYYY-NNNN, скачивание первичной спецификации .xlsx","stateLabel":"cart / success","roleLabel":"Представитель заказчика","moduleLabel":"Каталог"},{"file":"representative/representative_requests_list_default.png","caption":"Заявки — список в рамках своей службы/объекта (без фильтров по заказчику/объекту — доступны только менеджеру)","stateLabel":"list / default","roleLabel":"Представитель заказчика","moduleLabel":"Заявки"},{"file":"representative/representative_requests_list_status-filter.png","caption":"Заявки — фильтр по статусу (сегментированные пилюли)","stateLabel":"list / status-filter","roleLabel":"Представитель заказчика","moduleLabel":"Заявки"},{"file":"representative/representative_requests_detail_formed.png","caption":"Карточка заявки в статусе «Сформирована» — доступно редактирование состава","stateLabel":"detail / formed","roleLabel":"Представитель заказчика","moduleLabel":"Заявки"},{"file":"representative/representative_requests_detail_history-modal.png","caption":"История изменений заявки — версии слева, diff состава справа (добавлено/удалено/изменено количество)","stateLabel":"detail / history-modal","roleLabel":"Представитель заказчика","moduleLabel":"Заявки"},{"file":"representative/representative_requests_detail_in-progress-with-docs.png","caption":"Заявка в статусе «В работе» с прикреплённым документом (скачивание доступно, прикрепление — только у менеджера)","stateLabel":"detail / in-progress-with-docs","roleLabel":"Представитель заказчика","moduleLabel":"Заявки"},{"file":"representative/representative_requests_detail_done-locked.png","caption":"Заявка в статусе «Исполнена» — редактирование состава заблокировано, кнопки «Редактировать» нет","stateLabel":"detail / done-locked","roleLabel":"Представитель заказчика","moduleLabel":"Заявки"},{"file":"representative/representative_requests_edit_composition.png","caption":"Редактирование состава заявки — каталог+корзина, предзаполненные текущим составом; «Сохранить»/«Отмена» продублированы в футере корзины","stateLabel":"edit / composition","roleLabel":"Представитель заказчика","moduleLabel":"Заявки"},{"file":"representative/representative_objects_list_default.png","caption":"Объекты — представитель видит только свой объект (скоуп по службе из профиля)","stateLabel":"list / default","roleLabel":"Представитель заказчика","moduleLabel":"Объекты"},{"file":"representative/representative_objects_detail_materials.png","caption":"Карточка объекта, вкладка «Материалы» — просмотр и скачивание, без кнопок добавления/удаления","stateLabel":"detail / materials","roleLabel":"Представитель заказчика","moduleLabel":"Объекты"},{"file":"representative/representative_objects_detail_departments.png","caption":"Карточка объекта, вкладка «Службы» — только просмотр (создание/редактирование — в «Управлении»)","stateLabel":"detail / departments","roleLabel":"Представитель заказчика","moduleLabel":"Объекты"},{"file":"representative/representative_objects_detail_plan-gantt.png","caption":"План работ — диаграмма Ганта (верстанный мокап), без кнопки «Добавить этап»","stateLabel":"detail / plan-gantt","roleLabel":"Представитель заказчика","moduleLabel":"Объекты"},{"file":"representative/representative_objects_stage-panel_editable.png","caption":"Панель этапа — представитель правит описание/статус/%/ответственного; даты и удаление недоступны","stateLabel":"stage-panel / editable","roleLabel":"Представитель заказчика","moduleLabel":"Объекты"},{"file":"representative/representative_objects_stage-panel_locked-done.png","caption":"Панель этапа в статусе «Выполнен» — все поля только для просмотра","stateLabel":"stage-panel / locked-done","roleLabel":"Представитель заказчика","moduleLabel":"Объекты"},{"file":"representative/representative_training_list_default.png","caption":"Обучающие материалы — список статей (без кнопки «Новая статья»)","stateLabel":"list / default","roleLabel":"Представитель заказчика","moduleLabel":"Обучающие материалы"},{"file":"representative/representative_training_article_roles-overview.png","caption":"Статья — просмотр без кнопок «Редактировать»/«Удалить»","stateLabel":"article / roles-overview","roleLabel":"Представитель заказчика","moduleLabel":"Обучающие материалы"},{"file":"manager/manager_catalog_list_default.png","caption":"Каталог — менеджеру видна колонка «Вендор» и кнопки «Вендоры»/«Статистика»/«Импорт», но нет корзины (заявки формирует только представитель)","stateLabel":"list / default","roleLabel":"Менеджер GoldLink","moduleLabel":"Каталог"},{"file":"manager/manager_catalog_product_detail.png","caption":"Карточка товара — менеджеру видно поле «Вендор», кнопки заказа нет","stateLabel":"product / detail","roleLabel":"Менеджер GoldLink","moduleLabel":"Каталог"},{"file":"manager/manager_catalog_vendors_list.png","caption":"Управление вендорами — список (зона Каталога, доступно только менеджеру)","stateLabel":"vendors / list","roleLabel":"Менеджер GoldLink","moduleLabel":"Каталог"},{"file":"manager/manager_catalog_vendors_edit-modal.png","caption":"Редактирование вендора — модалка","stateLabel":"vendors / edit-modal","roleLabel":"Менеджер GoldLink","moduleLabel":"Каталог"},{"file":"manager/manager_catalog_vendors_create-modal.png","caption":"Новый вендор — модалка создания","stateLabel":"vendors / create-modal","roleLabel":"Менеджер GoldLink","moduleLabel":"Каталог"},{"file":"manager/manager_catalog_stats_default.png","caption":"Техническая статистика каталога — товары по вендорам и категориям (доступно только менеджеру)","stateLabel":"stats / default","roleLabel":"Менеджер GoldLink","moduleLabel":"Каталог"},{"file":"manager/manager_catalog_import_idle.png","caption":"Импорт каталога — выбор вендора и файла выгрузки","stateLabel":"import / idle","roleLabel":"Менеджер GoldLink","moduleLabel":"Каталог"},{"file":"manager/manager_catalog_import_uploading.png","caption":"Импорт — состояние загрузки/проверки файла","stateLabel":"import / uploading","roleLabel":"Менеджер GoldLink","moduleLabel":"Каталог"},{"file":"manager/manager_catalog_import_report.png","caption":"Импорт — отчёт построчной проверки (ОК/предупреждения/ошибки)","stateLabel":"import / report","roleLabel":"Менеджер GoldLink","moduleLabel":"Каталог"},{"file":"manager/manager_catalog_import_applied.png","caption":"Импорт — применён, показан итог","stateLabel":"import / applied","roleLabel":"Менеджер GoldLink","moduleLabel":"Каталог"},{"file":"manager/manager_catalog_import_history.png","caption":"Импорт — история прошлых загрузок","stateLabel":"import / history","roleLabel":"Менеджер GoldLink","moduleLabel":"Каталог"},{"file":"manager/manager_requests_list_loading.png","caption":"Заявки — состояние загрузки (скелетоны таблицы)","stateLabel":"list / loading","roleLabel":"Менеджер GoldLink","moduleLabel":"Заявки"},{"file":"manager/manager_requests_list_default.png","caption":"Заявки — менеджер видит все заявки всех заказчиков, с фильтрами по заказчику/объекту/службе","stateLabel":"list / default","roleLabel":"Менеджер GoldLink","moduleLabel":"Заявки"},{"file":"manager/manager_requests_list_filtered.png","caption":"Заявки — комбинация фильтров: статус + заказчик","stateLabel":"list / filtered","roleLabel":"Менеджер GoldLink","moduleLabel":"Заявки"},{"file":"manager/manager_requests_detail_status-select.png","caption":"Карточка заявки — менеджеру доступна смена статуса (сегмент «Управление статусом»)","stateLabel":"detail / status-select","roleLabel":"Менеджер GoldLink","moduleLabel":"Заявки"},{"file":"manager/manager_requests_detail_document-upload.png","caption":"Заявка «Исполнена» — менеджер всё ещё может прикреплять документы (кнопка «Прикрепить документ»)","stateLabel":"detail / document-upload","roleLabel":"Менеджер GoldLink","moduleLabel":"Заявки"},{"file":"manager/manager_objects_list_default.png","caption":"Объекты — менеджеру видны объекты всех заказчиков, с фильтром по заказчику","stateLabel":"list / default","roleLabel":"Менеджер GoldLink","moduleLabel":"Объекты"},{"file":"manager/manager_objects_detail_materials-crud.png","caption":"Материалы объекта — менеджер: CRUD записей и загрузка файлов","stateLabel":"detail / materials-crud","roleLabel":"Менеджер GoldLink","moduleLabel":"Объекты"},{"file":"manager/manager_objects_materials_create-modal.png","caption":"Новая запись материала — модалка с загрузкой файлов","stateLabel":"materials / create-modal","roleLabel":"Менеджер GoldLink","moduleLabel":"Объекты"},{"file":"manager/manager_objects_materials_delete-confirm.png","caption":"Удаление материала — подтверждение (деструктив всегда через модалку)","stateLabel":"materials / delete-confirm","roleLabel":"Менеджер GoldLink","moduleLabel":"Объекты"},{"file":"manager/manager_objects_detail_departments-view.png","caption":"Службы объекта — просмотр (CRUD служб — только в «Управлении»)","stateLabel":"detail / departments-view","roleLabel":"Менеджер GoldLink","moduleLabel":"Объекты"},{"file":"manager/manager_objects_detail_plan-gantt-full.png","caption":"План работ — диаграмма Ганта, менеджеру доступна кнопка «Добавить этап»","stateLabel":"detail / plan-gantt-full","roleLabel":"Менеджер GoldLink","moduleLabel":"Объекты"},{"file":"manager/manager_objects_plan_add-stage-modal.png","caption":"Новый этап плана работ — модалка создания (все поля сразу)","stateLabel":"plan / add-stage-modal","roleLabel":"Менеджер GoldLink","moduleLabel":"Объекты"},{"file":"manager/manager_objects_stage-panel_full-edit.png","caption":"Панель этапа — менеджеру доступны все поля: название, даты, зависимость от этапа, удаление","stateLabel":"stage-panel / full-edit","roleLabel":"Менеджер GoldLink","moduleLabel":"Объекты"},{"file":"manager/manager_objects_stage-panel_delete-confirm.png","caption":"Удаление этапа — подтверждение","stateLabel":"stage-panel / delete-confirm","roleLabel":"Менеджер GoldLink","moduleLabel":"Объекты"},{"file":"manager/manager_training_list_default.png","caption":"Обучающие материалы — менеджеру доступна кнопка «Новая статья»","stateLabel":"list / default","roleLabel":"Менеджер GoldLink","moduleLabel":"Обучающие материалы"},{"file":"manager/manager_training_article_manager-view.png","caption":"Статья — менеджеру доступны кнопки «Редактировать»/«Удалить»","stateLabel":"article / manager-view","roleLabel":"Менеджер GoldLink","moduleLabel":"Обучающие материалы"},{"file":"manager/manager_training_article_delete-confirm.png","caption":"Удаление статьи — подтверждение","stateLabel":"article / delete-confirm","roleLabel":"Менеджер GoldLink","moduleLabel":"Обучающие материалы"},{"file":"manager/manager_training_editor_edit-existing.png","caption":"Редактирование статьи — блочный конструктор: каждый блок можно сдвинуть вверх/вниз или удалить","stateLabel":"editor / edit-existing","roleLabel":"Менеджер GoldLink","moduleLabel":"Обучающие материалы"},{"file":"manager/manager_training_editor_new-empty.png","caption":"Новая статья — пустой конструктор, выбор типа блока перед добавлением","stateLabel":"editor / new-empty","roleLabel":"Менеджер GoldLink","moduleLabel":"Обучающие материалы"},{"file":"manager/manager_admin_tree_empty-selection.png","caption":"Управление — дерево «Заказчики» / «Сотрудники GoldLink», ничего не выбрано","stateLabel":"tree / empty-selection","roleLabel":"Менеджер GoldLink","moduleLabel":"Управление"},{"file":"manager/manager_admin_customers_root-panel.png","caption":"Управление — корень «Заказчики», кнопка «+ Добавить заказчика»","stateLabel":"customers / root-panel","roleLabel":"Менеджер GoldLink","moduleLabel":"Управление"},{"file":"manager/manager_admin_customer_create-form.png","caption":"Новый заказчик — форма создания","stateLabel":"customer / create-form","roleLabel":"Менеджер GoldLink","moduleLabel":"Управление"},{"file":"manager/manager_admin_customer_edit-panel.png","caption":"Карточка заказчика — инлайн-редактирование по blur, сводка связанных сущностей","stateLabel":"customer / edit-panel","roleLabel":"Менеджер GoldLink","moduleLabel":"Управление"},{"file":"manager/manager_admin_customer_delete-blocked.png","caption":"Удаление заказчика заблокировано — есть связанные объекты/представители/сотрудники (каскадного удаления нет)","stateLabel":"customer / delete-blocked","roleLabel":"Менеджер GoldLink","moduleLabel":"Управление"},{"file":"manager/manager_admin_site_create-form.png","caption":"Новый объект — создаётся уже привязанным к заказчику из контекста дерева","stateLabel":"site / create-form","roleLabel":"Менеджер GoldLink","moduleLabel":"Управление"},{"file":"manager/manager_admin_site_edit-panel.png","caption":"Карточка объекта в «Управлении» — поля объекта (название/локация/геопозиция/дата начала), не сущностный контент","stateLabel":"site / edit-panel","roleLabel":"Менеджер GoldLink","moduleLabel":"Управление"},{"file":"manager/manager_admin_department_create-form.png","caption":"Новая служба — только название, привязка к объекту/заказчику из контекста","stateLabel":"department / create-form","roleLabel":"Менеджер GoldLink","moduleLabel":"Управление"},{"file":"manager/manager_admin_department_edit-panel.png","caption":"Карточка службы — единственное редактируемое поле «Название»","stateLabel":"department / edit-panel","roleLabel":"Менеджер GoldLink","moduleLabel":"Управление"},{"file":"manager/manager_admin_representative_create-form.png","caption":"Новый представитель — привязка к службе фиксирована из контекста, email = логин","stateLabel":"representative / create-form","roleLabel":"Менеджер GoldLink","moduleLabel":"Управление"},{"file":"manager/manager_admin_representative_create-validation.png","caption":"Валидация формы — email уже используется другим пользователем (глобальная уникальность логина); ФИО обязательно","stateLabel":"representative / create-validation","roleLabel":"Менеджер GoldLink","moduleLabel":"Управление"},{"file":"manager/manager_admin_representative_edit-panel.png","caption":"Карточка представителя — ФИО/email/телефон/должность, привязка к службе не меняется","stateLabel":"representative / edit-panel","roleLabel":"Менеджер GoldLink","moduleLabel":"Управление"},{"file":"manager/manager_admin_employees_root-panel.png","caption":"Сотрудники заказчика — отдельный подузел вне каскада объект/служба","stateLabel":"employees / root-panel","roleLabel":"Менеджер GoldLink","moduleLabel":"Управление"},{"file":"manager/manager_admin_employee_create-form.png","caption":"Новый сотрудник заказчика — привязка только к заказчику, без объекта/службы","stateLabel":"employee / create-form","roleLabel":"Менеджер GoldLink","moduleLabel":"Управление"},{"file":"manager/manager_admin_employee_edit-panel.png","caption":"Карточка сотрудника заказчика","stateLabel":"employee / edit-panel","roleLabel":"Менеджер GoldLink","moduleLabel":"Управление"},{"file":"manager/manager_admin_managers_tree-and-root.png","caption":"Вкладка «Сотрудники GoldLink» — плоский список внутренних менеджеров","stateLabel":"managers / tree-and-root","roleLabel":"Менеджер GoldLink","moduleLabel":"Управление"},{"file":"manager/manager_admin_manager_create-form.png","caption":"Новый менеджер GoldLink — ФИО/email(логин)/телефон/должность","stateLabel":"manager / create-form","roleLabel":"Менеджер GoldLink","moduleLabel":"Управление"},{"file":"manager/manager_admin_manager_edit-panel.png","caption":"Карточка менеджера GoldLink","stateLabel":"manager / edit-panel","roleLabel":"Менеджер GoldLink","moduleLabel":"Управление"}];
+  (function () {
+    var lightbox = document.getElementById('lightbox');
+    var imgEl = document.getElementById('lightboxImg');
+    var breadcrumbEl = document.getElementById('lightboxBreadcrumb');
+    var textEl = document.getElementById('lightboxText');
+    var stateEl = document.getElementById('lightboxState');
+    var counterEl = document.getElementById('lightboxCounter');
+    var prevBtn = document.getElementById('lightboxPrev');
+    var nextBtn = document.getElementById('lightboxNext');
+    var closeBtn = document.getElementById('lightboxClose');
+    var currentIndex = -1;
+
+    function render(idx) {
+      var shot = SHOTS[idx];
+      if (!shot) return;
+      currentIndex = idx;
+      imgEl.src = shot.file;
+      imgEl.alt = shot.caption;
+      breadcrumbEl.textContent = shot.roleLabel + ' — ' + shot.moduleLabel;
+      textEl.textContent = shot.caption;
+      stateEl.textContent = shot.stateLabel;
+      counterEl.textContent = (idx + 1) + ' / ' + SHOTS.length;
+      // Навигация сквозная по всей галерее: на первом/последнем экране
+      // соответствующая стрелка просто отключается, без зацикливания.
+      prevBtn.disabled = idx <= 0;
+      nextBtn.disabled = idx >= SHOTS.length - 1;
+    }
+
+    function open(idx) {
+      render(idx);
+      lightbox.hidden = false;
+      document.body.style.overflow = 'hidden';
+    }
+
+    function close() {
+      lightbox.hidden = true;
+      currentIndex = -1;
+      document.body.style.overflow = '';
+    }
+
+    function step(delta) {
+      if (currentIndex < 0) return;
+      var next = currentIndex + delta;
+      if (next < 0 || next >= SHOTS.length) return;
+      render(next);
+    }
+
+    document.querySelectorAll('.js-thumb').forEach(function (link) {
+      link.addEventListener('click', function (event) {
+        event.preventDefault();
+        var idx = parseInt(link.getAttribute('data-idx'), 10);
+        open(idx);
+      });
+    });
+
+    closeBtn.addEventListener('click', close);
+    prevBtn.addEventListener('click', function () { step(-1); });
+    nextBtn.addEventListener('click', function () { step(1); });
+
+    // Клик вне картинки (по фону-оверлею) закрывает лайтбокс; клик по самой
+    // картинке/подписи/кнопкам — нет (событие не всплывает выше figure/кнопок).
+    lightbox.addEventListener('click', function (event) {
+      if (event.target === lightbox) close();
+    });
+
+    document.addEventListener('keydown', function (event) {
+      if (lightbox.hidden) return;
+      if (event.key === 'Escape') close();
+      else if (event.key === 'ArrowLeft') step(-1);
+      else if (event.key === 'ArrowRight') step(1);
+    });
+  })();
+</script>
+</body>
+</html>
